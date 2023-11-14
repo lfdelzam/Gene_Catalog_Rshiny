@@ -8,6 +8,7 @@ on:
 
 jobs:
   build:
+    if: github.repository == 'lfdelzam/Gene_catalog_Rshiny'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
