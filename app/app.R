@@ -427,14 +427,17 @@ shinyApp(
     
     output$downloadData <- downloadHandler(
       filename = function() {
+        texto=""
         if (!is.null(Anotaxhits())) {
           
-          paste(input$selected_table, "_annot_and_tax_output.tsv", sep = "")
+          RENAME=unlist(strsplit(input$selected_table," "))[1]
+          RENAME=gsub("::","_",RENAME)
+          texto=paste(RENAME, "_annot_and_tax_output.tsv", sep = "")
         } else if (!is.null(Anotaxhits_all())) {
-          paste("Filter","annot_and_tax_output.tsv", sep = "_")
+          texto=paste("Filter","annot_and_tax_output.tsv", sep = "_")
         }
-      }
-      ,
+        return(texto)
+      },
       content = function(file) {
         if (!is.null(Anotaxhits())) {
           fwrite(Anotaxhits(), file, sep="\t", row.names = FALSE)
@@ -447,7 +450,10 @@ shinyApp(
     
     output$downloadblast <- downloadHandler(
       filename = function() {
-        paste(input$selected_table, "_blast_output.tsv", sep = "")
+        RENAME=unlist(strsplit(input$selected_table," "))[1]
+        RENAME=gsub("::","_",RENAME)
+
+        return(paste(RENAME, "_blast_output.tsv", sep = ""))
       },
       content = function(file) {
         fwrite(blastresults()[[input$selected_table]], file, sep="\t", row.names = FALSE)
@@ -496,8 +502,10 @@ shinyApp(
           if (!is.null(Anotaxhits())) {
             
             REFNAME=gsub("::","_",as.character(Anotaxhits()[s, "GeneID"]))
-            texto=paste("query",input$selected_table,"ref",REFNAME, "KEGG_BRITTE_output.tsv", sep = "_")
+            QNAME=unlist(strsplit(input$selected_table," "))[1]
+            QNAME=gsub("::","_",QNAME)
             
+            texto=paste("query",QNAME,"ref",REFNAME, "KEGG_BRITTE_output.tsv", sep = "_")
           } else if (!is.null(Anotaxhits_all())) {
             
             REFNAME=gsub("::","_",as.character(Anotaxhits_all()[s, "GeneID"]))
@@ -532,8 +540,9 @@ shinyApp(
           if (!is.null(Anotaxhits())) {
             
             REFNAME=gsub("::","_",as.character(Anotaxhits()[s, "GeneID"]))
-            texto=paste("query",input$selected_table,"ref",REFNAME, "KEGG_PATHWAY_output.tsv", sep = "_")
-            
+            QNAME=unlist(strsplit(input$selected_table," "))[1]
+            QNAME=gsub("::","_",QNAME)
+            texto=paste("query",QNAME,"ref",REFNAME, "KEGG_PATHWAY_output.tsv", sep = "_")            
           } else if (!is.null(Anotaxhits_all())) {
             
             REFNAME=gsub("::","_",as.character(Anotaxhits_all()[s, "GeneID"]))
