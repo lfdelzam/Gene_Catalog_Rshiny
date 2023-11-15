@@ -164,14 +164,16 @@ shinyApp(
       text<-NULL
       if (grepl(">",isolate(input$query))){
         texti=isolate(input$query)
+        dir.create(directorio_qr)
         if (input$B_type == "blastn") {
+          path_to_query_n <- paste(directorio_qr, paste(session$token,"queryp.fna", sep="_"), sep="/")
           fwrite(as.list(texti), file=path_to_query_n, quote = F)
           text=isolate(readDNAStringSet(path_to_query_n))
         } else if (input$B_type == "blastp") {
+          path_to_query_p <- paste(directorio_qr, paste(session$token,"queryp.faa", sep="_"), sep="/")
           fwrite(as.list(texti), file=path_to_query_p, quote = F)
           text=isolate(readAAStringSet(path_to_query_p))
-        }
-        
+        } 
       } else if (!is.null(isolate(input$file_query$datapath))) {
         if (input$B_type == "blastn") {
           text=readDNAStringSet(isolate(input$file_query$datapath))
