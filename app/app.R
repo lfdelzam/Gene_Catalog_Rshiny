@@ -2,7 +2,7 @@ list_of_packages <- c("tidyverse", "data.table", "rBLAST", "leaflet", "sp", "mag
 
 for (s in list_of_packages) { suppressPackageStartupMessages(library(s, character.only = TRUE)) }
 
-source("app_functions.R")
+source("app_functionsB.R")
 
 
 shinyApp(
@@ -10,10 +10,8 @@ shinyApp(
                 useShinyjs(),
                 titlePanel(div(
                   img(src='SciLifeLab_Logotype_Green_POS.png', align='left', height='30px'), img(src='Logos.png', align='right', height='40px'),
-                  #br(),
                   h1(strong("BAltic Gene Set - BAGS.v1.1",
                             style='color:steelblue;font-family:Avenir;font-size:28px;padding:10px'),
-                     # class="btn-primary",
                      align="center"),
                   hr()
                 )
@@ -61,13 +59,14 @@ shinyApp(
                                                    
                                           ),
                                           tabPanel("Filter", icon=icon("filter"), br(),
-                                                   p(strong("Select one or several filters, one item per filter."),em("Regular expresion can be used when Exact matching is set to FALSE.")),
+                                                   p(strong("Select one or several filters, one item per filter."),em("Regular expression can be used when Exact matching is set to FALSE.")),
                                                    br(),br(),
-                                                   fixedRow(column(width = 4, uiOutput("assigned_taxonomy")),column(width = 4,uiOutput("PFAM_accession"))),
-                                                   fixedRow(column(width = 4, uiOutput("KEGG")),column(width = 4,uiOutput("COG"))),
-                                                   fixedRow(column(width = 4, uiOutput("dbCAN_family")),column(width = 4,uiOutput("Rfam_accession"))),
-                                                   fixedRow(column(width = 4, uiOutput("Others")),column(width = 4,uiOutput("And_or"))),
-                                                   fixedRow(column(width = 4, uiOutput("ignore_case")),column(width = 4, uiOutput("exact_matching"))),
+                                                   fixedRow(column(width = 4, uiOutput("CAT_assigned_taxonomy")),column(width = 4,uiOutput("assigned_taxonomy"))),
+                                                   fixedRow(column(width = 4, uiOutput("egbestax")),column(width = 4, uiOutput("dbCAN_family"))),         
+                                                   fixedRow(column(width = 4, uiOutput("KEGG")),column(width = 4,uiOutput("COG"))),                                                   
+                                                   fixedRow(column(width = 4, uiOutput("PFAM_accession")),column(width = 4,uiOutput("Rfam_accession"))),
+                                                   fixedRow(column(width = 4, uiOutput("Others")),column(width = 4,uiOutput("ignore_case"))),
+                                                   fixedRow(column(width = 4, uiOutput("And_or")),column(width = 4, uiOutput("exact_matching"))),
                                                    actionButton("searchFT_2", "search", icon=icon("magnifying-glass"),class="btn btn-primary"),hr(),
                                                    em("Select hit(s) and click on GO! to obtain further KEGG functional annotation, and geolocalisation"),
                                                    br(),br(),
@@ -117,8 +116,9 @@ shinyApp(
                         
                         
                         hr(),
-                        span(#style= "font-size:16px",
-                          "Taxonomic composition of the BAGS.", a(href="rep_genes_taxonomy_krona.html", "Click to open the chart" )
+                        span("Taxonomic composition of the BAGS.", 
+                          "Based on mmseq2 - UniRef90:", a(href="Mmseqs2_rep_genes_taxonomy_krona.html", "Click to open the chart" ),
+                          "- Based on CAT - GTDB:", a(href="CAT_rep_genes_taxonomy_krona.html", "Click to open the chart" )
                         ),
                         hr()
                     ), #div
@@ -183,7 +183,7 @@ shinyApp(
       }
       if (is.null(text)) { stop("Please provide query sequences in fasta format")}
       if (length(text) > Max_num_query) { stop(paste("Please provide a maximum of", Max_num_query, "queries", sep=" "))}
-      showModal( modalDialog( "Running blast", add_busy_spinner(spin = "fingerprint") )   )
+      showModal( modalDialog( "Running blast. It may take some minutes", add_busy_spinner(spin = "fingerprint") )   )
       
       LISTA=Hit_blast(input$B_type, text, C_pus, input$N_hits, input$eval, input$minPerIden, input$minPeralg)
       removeModal()
@@ -191,7 +191,10 @@ shinyApp(
     },  ignoreNULL= T, ignoreInit=F)
     
     output$assigned_taxonomy <- renderUI({
-      textInput("selected_tax",label = "Taxonomy", value=NULL)
+      textInput("selected_tax",label = "Taxonomy (mmseq2 - Uniref90)", value=NULL)
+    })
+    output$CAT_assigned_taxonomy <- renderUI({
+      textInput("selected_tax_CAT",label = "Taxonomy (CAT - GTDB)", value=NULL)
     })
     output$dbCAN_family <- renderUI({
       textInput("selected_dbCAN_family",label = "dbCAN family", value=NULL)
@@ -206,11 +209,16 @@ shinyApp(
       textInput("selected_COG",label = "COG", value=NULL)
     })
     output$KEGG <- renderUI({
-      textInput("selected_KEGG",label = "KEGG", value=NULL)
+      textInput("selected_KEGG",label = "KEGG (KO)", value=NULL)
     })
     output$Others <- renderUI({
-      textInput("selected_Others",label = "Preferred name", value=NULL)
+      textInput("selected_Others",label = "Preferred name - (Eggnog)", value=NULL)
     })
+    
+    output$egbestax <- renderUI({
+      textInput("selected_egbestax",label = "Best_taxa_level - (Eggnog)", value=NULL)
+    })
+    
     output$And_or<- renderUI({
       selectInput("selected_And_or", "Logical operator", choices=c("and","or"), width="200px")
     })
@@ -232,14 +240,15 @@ shinyApp(
       if (!is.null(blastresults()) && !is.null(input$selected_table)){
         blastresults()[[input$selected_table]]
       }
-    }, selection="multiple", future = F, server=T)
+    }, selection="multiple", future = F, server=T,options = list(lengthMenu = c('10', '20', '50','100','200', '500'),pageLength = 10)
+    )
     
     
     Anotaxhits <- eventReactive({ input$go_anotax && !is.null(input$selected_table) && !is.null(input$blastResults_rows_selected)}, {
       s = input$blastResults_rows_selected
       if (!is.null(s) ) {
         hit=as.character(blastresults()[[input$selected_table]][s, "SubjectID"])
-        showModal(modalDialog( "Retrieving information", add_busy_spinner(spin = "fingerprint") ) )
+        showModal(modalDialog( "Retrieving information. It may take some minutes", add_busy_spinner(spin = "fingerprint") ) )
         thehits<-get_annotation(hit)
         removeModal()
         return(thehits)
@@ -247,10 +256,10 @@ shinyApp(
     },  ignoreNULL= T, ignoreInit=F)
     
     Filter_table <- eventReactive({ input$searchFT_2}, {
-      showModal(modalDialog( "Retrieving information", add_busy_spinner(spin = "fingerprint")) )
+      showModal(modalDialog( "Retrieving information. It may take some minutes", add_busy_spinner(spin = "fingerprint")) )
       
       FThits <- NULL
-      if ((input$selected_And_or == "and") && (input$selected_tax != "" |input$selected_PFAM_accession != "" |input$selected_KEGG != "" |input$selected_COG != "" | input$selected_dbCAN_family != ""| input$selected_Rfam_accession != "" | input$selected_Others != "" ) ) {
+      if ((input$selected_And_or == "and") && (input$selected_tax != "" |input$selected_PFAM_accession != "" |input$selected_KEGG != "" |input$selected_COG != "" | input$selected_dbCAN_family != ""| input$selected_Rfam_accession != "" | input$selected_Others != "" | input$selected_egbestax != "") ) {
         
         FThits <- big_tbl %>% select(GeneID,
                                      Preferred_name,
@@ -263,13 +272,21 @@ shinyApp(
                                      COG_cat,
                                      KEGG,
                                      Description,
-                                     assigned_taxonomy
-        )
+                                     best_tax_level,
+                                     CAT_assigned_taxonomy,
+                                     MMseq2_assigned_taxonomy
+        ) %>% rename("best_tax_level"="Eggnog_best_tax_level")
         
         if (input$selected_tax != "") {
-          try(FThitsTa <- FThits %>% filter(grepl(input$selected_tax,assigned_taxonomy, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect() , silent = T)
+          try(FThitsTa <- FThits %>% filter(grepl(input$selected_tax,MMseq2_assigned_taxonomy, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect() , silent = T)
           if (exists("FThitsTa")) { FThits <- FThitsTa } else {FThits <- NULL}
         }
+        
+        if (input$selected_tax_CAT != "") {
+          try(FThitsTaC <- FThits %>% filter(grepl(input$selected_tax_CAT,CAT_assigned_taxonomy, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect() , silent = T)
+          if (exists("FThitsTaC")) { FThits <- FThitsTaC } else {FThits <- NULL}
+        }
+        
         if (input$selected_PFAM_accession != "" && !is.null(FThits)) {
           
           try(FThitsTb <- FThits %>% filter(grepl(input$selected_PFAM_accession,PFAM_accession, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect(), silent = T)
@@ -293,27 +310,33 @@ shinyApp(
         }
         if (input$selected_Others != "" && !is.null(FThits)) {
           try(FThitsTg <- FThits %>% filter(grepl(input$selected_Others,Preferred_name, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect(), silent = T)
-          if (exists("FThitsTg")) { FThits <- FThitsTg
-          } else {FThits <- NULL}
+          if (exists("FThitsTg")) { FThits <- FThitsTg} else {FThits <- NULL}
         }
-      } else if ((input$selected_And_or == "or") && (input$selected_tax != "" |input$selected_PFAM_accession != "" |input$selected_KEGG != "" |input$selected_COG != "" | input$selected_dbCAN_family != ""| input$selected_Rfam_accession != "" | input$selected_Others != "") ) {
-        big_tbls = big_tbl%>% select(GeneID,
-                                     Preferred_name,
-                                     dbCAN_family, RFAM_description,
-                                     RFAM_accession,
-                                     PFAM_family,
-                                     PFAM_accession,
-                                     EC,
-                                     COG,
-                                     COG_cat,
-                                     KEGG,
-                                     Description,
-                                     assigned_taxonomy
-        )
+        if (input$selected_egbestax != "" && !is.null(FThits)) {
+          try(FThitsTh <- FThits %>% filter(grepl(input$selected_egbestax,Eggnog_best_tax_level, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect(), silent = T)
+          if (exists("FThitsTh")) { FThits <- FThitsTh} else {FThits <- NULL}
+        }
         
-        list_df = vector("list", 7)
+      } else if ((input$selected_And_or == "or") && (input$selected_tax != "" |input$selected_PFAM_accession != "" |input$selected_KEGG != "" |input$selected_COG != "" | input$selected_dbCAN_family != ""| input$selected_Rfam_accession != "" | input$selected_Others != "" | input$selected_egbestax != "") ) {
+        big_tbls = big_tbl %>% select(GeneID,
+                                      Preferred_name,
+                                      dbCAN_family, RFAM_description,
+                                      RFAM_accession,
+                                      PFAM_family,
+                                      PFAM_accession,
+                                      EC,
+                                      COG,
+                                      COG_cat,
+                                      KEGG,
+                                      Description,
+                                      best_tax_level,
+                                      CAT_assigned_taxonomy,
+                                      MMseq2_assigned_taxonomy
+        ) %>% rename("best_tax_level"="Eggnog_best_tax_level")
+        
+        list_df = vector("list", 9)
         if (input$selected_tax != "") {
-          try(list_df1 <- big_tbls %>% filter(grepl(input$selected_tax,assigned_taxonomy, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect(), silent =T)
+          try(list_df1 <- big_tbls %>% filter(grepl(input$selected_tax,MMseq2_assigned_taxonomy, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect(), silent =T)
           if (exists("list_df1")) { list_df[[1]] <- list_df1 }
         }
         if (input$selected_PFAM_accession != "") {
@@ -340,6 +363,15 @@ shinyApp(
           try(list_df7 <- big_tbls %>% filter(grepl(input$selected_Others,Preferred_name, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect(), silent =T)
           if (exists("list_df7")) { list_df[[7]] <- list_df7 }
         }
+        if (input$selected_egbestax != "") {
+          try(list_df8 <- big_tbls %>% filter(grepl(input$selected_egbestax,Eggnog_best_tax_level, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect(), silent =T)
+          if (exists("list_df8")) { list_df[[8]] <- list_df8 }
+        }
+        
+        if (selected_tax_CAT != "") {
+          try(list_df9 <- big_tbls %>% filter(grepl(input$selected_tax_CAT,CAT_assigned_taxonomy, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect(), silent =T)
+          if (exists("list_df9")) { list_df[[9]] <- list_df9 }
+        }
         
         list_df = list_df[lapply(list_df,length)>0]
         if (length(list_df) > 1) {
@@ -359,14 +391,16 @@ shinyApp(
       if (!is.null(Filter_table()) ) {
         return(Filter_table())
       } else {stop("No hits found")}
-    }, selection="multiple", future = F, server=T)
+    }, selection="multiple", future = F, server=T,
+    options = list(lengthMenu = c('10', '20', '50','100','200', '500'),pageLength = 10)
+    )
     
     
     Anotaxhits_all <- eventReactive({ input$go_anotax_all && !is.null(input$AnnotaxResults_rows_selected)}, {
       s = input$AnnotaxResults_rows_selected
       if (!is.null(s) ) {
         hit=Filter_table()$GeneID[s]
-        showModal(modalDialog( "Retrieving information", add_busy_spinner(spin = "fingerprint") ) )
+        showModal(modalDialog( "Retrieving information. It may take some minutes", add_busy_spinner(spin = "fingerprint") ) )
         
         thehits<-get_annotation(hit)
         removeModal()
@@ -380,7 +414,8 @@ shinyApp(
       } else if (!is.null(Anotaxhits_all())){
         return(Anotaxhits_all())
       } else { return(NULL)}
-    }, selection="single", future = F)
+    }, selection="single", future = F, options = list(lengthMenu = c('10', '20', '50','100','200', '500'),pageLength = 10)
+    )
     
     
     dt_proxy <- DT::dataTableProxy("blastResults")
@@ -452,7 +487,7 @@ shinyApp(
       filename = function() {
         RENAME=unlist(strsplit(input$selected_table," "))[1]
         RENAME=gsub("::","_",RENAME)
-
+        
         return(paste(RENAME, "_blast_output.tsv", sep = ""))
       },
       content = function(file) {
@@ -471,7 +506,7 @@ shinyApp(
           keggR=as.character(Anotaxhits_all()[s, "KEGG"])  #new
         }
         if (!is.na(keggR)) {
-          showModal(modalDialog( "Retrieving information", add_busy_spinner(spin = "fingerprint") ) )
+          showModal(modalDialog( "Retrieving information. It may take some minutes", add_busy_spinner(spin = "fingerprint") ) )
           tmp <- expand_kegg(keggR)
           removeModal()
         }
@@ -491,7 +526,7 @@ shinyApp(
         }
       }
       return(outp)
-    }, selection="single", future = F)
+    }, selection="single", future = F, options = list(lengthMenu = c('10', '20', '50','100','200', '500'),pageLength = 10))
     
     
     output$downloadbritte <- downloadHandler(
@@ -529,7 +564,7 @@ shinyApp(
         }
       }
       return(outp)
-    }, selection="single", future = F)
+    }, selection="single", future = F,options = list(lengthMenu = c('10', '20', '50','100','200', '500'),pageLength = 10))
     
     output$downloadpath <- downloadHandler(
       filename = function() {
@@ -558,7 +593,7 @@ shinyApp(
     )
     
     output$Map_ggplot = renderUI({
-      showModal(modalDialog( "Retrieving information", add_busy_spinner(spin = "fingerprint") ) )
+      showModal(modalDialog( "Retrieving information. It may take some minutes", add_busy_spinner(spin = "fingerprint") ) )
       themap<-NULL
       s = input$blastResults_rows_selected
       if (length(s) ) {
