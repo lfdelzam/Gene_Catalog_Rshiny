@@ -63,48 +63,73 @@ get_annotation <- function(selected_hit) {
                                                                                             COG_cat,
                                                                                             KEGG,
                                                                                             Description,
-                                                                                            assigned_taxonomy
-  )
+                                                                                            best_tax_level,
+                                                                                            CAT_assigned_taxonomy,
+                                                                                            MMseq2_assigned_taxonomy
+  ) %>% rename("best_tax_level"="Eggnog_best_tax_level")
   
 }
 
+deconv_clusters <- function(x, co_patern) {
+
+  ind_lista=unlist(strsplit(x,","))
+  co_hits=ind_lista[grep(co_patern,ind_lista)]
+  ind_lista=ind_lista[!ind_lista %in% co_hits] 
+  return(ind_lista)}
+
 get_localisation <- function(selected_hit) {
+
   map<-NULL
   co_patern="CO::"
   co_hits=selected_hit[grep(co_patern,selected_hit)]
+  eq_ind_genes=c()
   if (length(co_hits) > 0) {
-    eq_ind_genes=c()
+
     for (coa in co_hits) {
-      ind_genes=cluster_df %>% filter(co == coa) 
+      ind_genes=cluster_df %>% filter(Rep == coa)
       eq_ind_genes=c(eq_ind_genes,
                      unique(
-                       sapply(ind_genes$ind, 
-                              function(x) unlist(strsplit(x,","))[1])
+                       sapply(ind_genes$genes_in_cluster, function(x) deconv_clusters(x, co_patern))
                      )
       )
-    }  
-    ind_hits=selected_hit[-c(grep(co_patern,selected_hit))]
-    if (length(ind_hits) > 0) {
-      selected_hit=unique(c(ind_hits,eq_ind_genes))
-    } else { selected_hit=unique(eq_ind_genes) }
-  }    
-  selectes=unique(sapply(selected_hit, dash_split))
-  hit_seqs <- ref_coords %>% filter(ref_id %in% selectes) %>% partition(cluster) %>% collect()
-  if (nrow(hit_seqs) >0) {
-    coordinates(hit_seqs) <- ~Lon + Lat
-    
-    map<-leaflet(hit_seqs) %>% addTiles() %>% addCircles() %>%
-      addMarkers(data=hit_seqs,
-                 clusterOptions = markerClusterOptions(zoomToBoundsOnClick = F),
-                 popup = ~paste(
-                   paste('<b>', 'Ref.:', '</b>', hit_seqs$ref_id),
-                   paste('<b>',  'Sal.:', '</b>', hit_seqs$Sal),
-                   paste('<b>', 'Temp.:','</b>', hit_seqs$Temp),
-                   paste('<b>', 'Depth:', '</b>',hit_seqs$Depth),
-                   sep = '<br/>'),popupOptions = popupOptions(closeButton = F)
-      )
+    }
   }
-  
+    ind_hits=selected_hit[!selected_hit %in% co_hits]
+
+    ia_genes=c()
+    if (length(ind_hits) > 0) {
+      
+      for (ia in ind_hits) {
+        ind_genes=cluster_df %>% filter(Rep == ia)
+        ia_genes=c(ia_genes,
+                   unique(
+                     sapply(ind_genes$genes_in_cluster, function(x) deconv_clusters(x, co_patern))
+                   )
+        )
+      }
+    }  
+
+      Sel_hits=unique(c(ia_genes,eq_ind_genes))
+
+  selectes=unique(sapply(Sel_hits, dash_split))
+  if (!is.null(selectes[[1]])) {
+
+    hit_seqs <- ref_coords %>% filter(ref_id %in% selectes) %>% partition(cluster) %>% collect()
+    if (nrow(hit_seqs) >0) {
+      coordinates(hit_seqs) <- ~Lon + Lat
+      
+      map<-leaflet(hit_seqs) %>% addTiles() %>% addCircles() %>%
+        addMarkers(data=hit_seqs,
+                   clusterOptions = markerClusterOptions(zoomToBoundsOnClick = F),
+                   popup = ~paste(
+                     paste('<b>', 'Ref.:', '</b>', hit_seqs$ref_id),
+                     paste('<b>',  'Sal.:', '</b>', hit_seqs$Sal),
+                     paste('<b>', 'Temp.:','</b>', hit_seqs$Temp),
+                     paste('<b>', 'Depth:', '</b>',hit_seqs$Depth),
+                     sep = '<br/>'),popupOptions = popupOptions(closeButton = F)
+        )
+    }
+  }
   return(map)
 }
 
@@ -119,10 +144,10 @@ expand_kegg <- function(kegg_idin){
     try(kegg_PATHWAY <-kegg_info[[1]]$PATHWAY %>% as_tibble(), silent = T)
     
     if (exists("kegg_BRITE")) { 
-      #df[["BRITE"]] = kegg_BRITE } # 
+      
       df[["BRITE"]] = list(df[["BRITE"]], kegg_BRITE)  %>% bind_rows(.id = kegg_id) }
     if (exists("kegg_PATHWAY")) { 
-      #df[["PATHWAY"]] = kegg_PATHWAY } #
+      
       df[["PATHWAY"]] = list(df[["PATHWAY"]], kegg_PATHWAY)  %>% bind_rows(.id = kegg_id) } }
   
   return(df)
