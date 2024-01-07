@@ -6,7 +6,7 @@ FROM rocker/shiny:latest
 RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y git libxml2-dev libmagick++-dev \
-    wget libgomp1 \
+    wget \
     libcurl4-gnutls-dev \
     libssl-dev \
     libcurl4-openssl-dev \
