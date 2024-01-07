@@ -5,8 +5,7 @@ FROM rocker/shiny:latest
 # Install system dependencies including those for tidyverse
 RUN apt-get update && \
     apt-get upgrade -y && \
-    apt-get install -y git libxml2-dev libmagick++-dev \
-    wget \
+    apt-get install -y wget git libxml2-dev libmagick++-dev \
     libcurl4-gnutls-dev \
     libssl-dev \
     libcurl4-openssl-dev \
@@ -15,8 +14,8 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-#Install Blast
-#FROM ncbi/blast:2.13.0 #Before
+# Install Blast
+# FROM ncbi/blast:2.13.0
 
 RUN wget ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/2.13.0/ncbi-blast-2.13.0+-x64-linux.tar.gz -O /tmp/blast.tar.gz && \
 	tar zxvf /tmp/blast.tar.gz -C /opt/ && rm /tmp/blast.tar.gz
