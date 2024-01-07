@@ -6,6 +6,7 @@ FROM rocker/shiny:latest
 RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y git libxml2-dev libmagick++-dev \
+    wget libgomp1 \
     libcurl4-gnutls-dev \
     libssl-dev \
     libcurl4-openssl-dev \
@@ -14,6 +15,13 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
+#Install Blast
+#FROM ncbi/blast:2.13.0 #Before
+
+RUN wget ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/2.13.0/ncbi-blast-2.13.0+-x64-linux.tar.gz -O /tmp/blast.tar.gz && \
+	tar zxvf /tmp/blast.tar.gz -C /opt/ && rm /tmp/blast.tar.gz
+
+ENV PATH="/opt/ncbi-blast-2.13.0+/bin:${PATH}"
 
 # Install Basic Utility R Packages
 
@@ -31,8 +39,6 @@ RUN R -e "remotes::install_version('shinyjs', version = '2.1.0', dependencies= T
 RUN R -e "remotes::install_version('vembedr', version = '0.1.5', dependencies= T)"
 RUN R -e "remotes::install_version('multidplyr', version = '0.1.3', dependencies= T)"
 RUN R -e "remotes::install_version('shinybusy', version = '0.3.1', dependencies= T)"
-
-FROM ncbi/blast:2.13.0
 
 RUN rm -rf /srv/shiny-server/* COPY /app/* /srv/shiny-server/
 
