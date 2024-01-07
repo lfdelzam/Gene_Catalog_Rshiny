@@ -5,7 +5,7 @@ FROM rocker/shiny:latest
 # Install system dependencies including those for tidyverse
 RUN apt-get update && \
     apt-get upgrade -y && \
-    apt-get install -y wget git libxml2-dev libmagick++-dev \
+    apt-get install -y git libxml2-dev libmagick++-dev \
     libcurl4-gnutls-dev \
     libssl-dev \
     libcurl4-openssl-dev \
