@@ -6,6 +6,7 @@ FROM rocker/shiny:latest
 RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y git libxml2-dev libmagick++-dev \
+    wget libgomp1 \
     libcurl4-gnutls-dev \
     libssl-dev \
     libcurl4-openssl-dev \
@@ -13,6 +14,7 @@ RUN apt-get update && \
     pandoc && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
+
 
 # Install Blast
 # FROM ncbi/blast:2.13.0
