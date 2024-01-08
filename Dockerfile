@@ -44,7 +44,8 @@ RUN R -e "remotes::install_version('vembedr', version = '0.1.5', dependencies= T
 RUN R -e "remotes::install_version('multidplyr', version = '0.1.3', dependencies= T)"
 RUN R -e "remotes::install_version('shinybusy', version = '0.3.1', dependencies= T)"
 
-RUN rm -rf /srv/shiny-server/* COPY /app/* /srv/shiny-server/
+RUN rm -rf /srv/shiny-server/*
+COPY /app/* /srv/shiny-server/
 
 USER shiny
 
