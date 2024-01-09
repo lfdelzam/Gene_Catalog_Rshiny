@@ -2,7 +2,7 @@ list_of_packages <- c("tidyverse", "data.table", "rBLAST", "leaflet", "sp", "mag
 
 for (s in list_of_packages) { suppressPackageStartupMessages(library(s, character.only = TRUE)) }
 
-source("app_functionsB.R")
+source("app_functions.R")
 
 
 shinyApp(
