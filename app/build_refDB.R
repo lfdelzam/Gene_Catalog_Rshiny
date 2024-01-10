@@ -1,5 +1,5 @@
 rm(list = ls())
-
+library("arrow")
 C_pus <- 8
 
 
@@ -77,6 +77,7 @@ if ( !file.exists(paste(directorio_db, "big_tbl.rds", sep="/") )) {
   
   
   saveRDS(big_tbl, file=paste(directorio_db,"big_tbl.rds", sep="/"))
+  write_parquet(big_tbl, paste(directorio_db,"big_tbl.parquet", sep="/"))
   
 }
 
@@ -104,5 +105,6 @@ if (file.exists(path_to_clusters) & !exists("cluster_df") ) {
   cluster_df<-read_tsv(path_to_clusters, col_names = c("Rep", "genes_in_cluster"), num_threads = C_pus, show_col_types = FALSE)
   
   saveRDS(cluster_df, file=paste(directorio_db, "cluster_df.rds", sep="/"))
+  write_parquet(cluster_df, paste(directorio_db, "cluster_df.parquet", sep="/"))
   
 }
