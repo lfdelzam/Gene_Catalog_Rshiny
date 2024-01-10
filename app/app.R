@@ -1,4 +1,4 @@
-list_of_packages <- c("tidyverse", "data.table", "rBLAST", "leaflet", "sp", "magrittr", "KEGGREST", "shiny", "shinythemes", "DT","shinyjs","vembedr", "multidplyr","shinybusy")
+list_of_packages <- c("tidyverse", "data.table", "rBLAST", "leaflet", "sp", "magrittr", "KEGGREST", "shiny", "shinythemes", "DT","shinyjs","vembedr", "multidplyr","shinybusy","arrow")
 
 for (s in list_of_packages) { suppressPackageStartupMessages(library(s, character.only = TRUE)) }
 
@@ -259,9 +259,9 @@ shinyApp(
       showModal(modalDialog( "Retrieving information. It may take some minutes", add_busy_spinner(spin = "fingerprint")) )
       
       FThits <- NULL
-      if ((input$selected_And_or == "and") && (input$selected_tax != "" |input$selected_PFAM_accession != "" |input$selected_KEGG != "" |input$selected_COG != "" | input$selected_dbCAN_family != ""| input$selected_Rfam_accession != "" | input$selected_Others != "" | input$selected_egbestax != "") ) {
+      if ((input$selected_And_or == "and") && (input$selected_tax_CAT != "" | input$selected_tax != "" |input$selected_PFAM_accession != "" |input$selected_KEGG != "" |input$selected_COG != "" | input$selected_dbCAN_family != ""| input$selected_Rfam_accession != "" | input$selected_Others != "" | input$selected_egbestax != "") ) {
         
-        FThits <- big_tbl %>% select(GeneID,
+        FThits <- arrow::open_dataset(paste(directorio_db,"big_tbl.parquet", sep="/"),format = "parquet") %>% dplyr::select(GeneID,
                                      Preferred_name,
                                      dbCAN_family, RFAM_description,
                                      RFAM_accession,
@@ -275,14 +275,14 @@ shinyApp(
                                      best_tax_level,
                                      CAT_assigned_taxonomy,
                                      MMseq2_assigned_taxonomy
-        ) %>% rename("best_tax_level"="Eggnog_best_tax_level")
+        ) %>% dplyr::rename("Eggnog_best_tax_level"="best_tax_level") %>% dplyr::collect() 
         
-        if (input$selected_tax != "") {
+        if (input$selected_tax != "" && !is.null(FThits)) {
           try(FThitsTa <- FThits %>% filter(grepl(input$selected_tax,MMseq2_assigned_taxonomy, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect() , silent = T)
           if (exists("FThitsTa")) { FThits <- FThitsTa } else {FThits <- NULL}
         }
         
-        if (input$selected_tax_CAT != "") {
+        if (input$selected_tax_CAT != "" && !is.null(FThits)) {
           try(FThitsTaC <- FThits %>% filter(grepl(input$selected_tax_CAT,CAT_assigned_taxonomy, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect() , silent = T)
           if (exists("FThitsTaC")) { FThits <- FThitsTaC } else {FThits <- NULL}
         }
@@ -317,8 +317,9 @@ shinyApp(
           if (exists("FThitsTh")) { FThits <- FThitsTh} else {FThits <- NULL}
         }
         
-      } else if ((input$selected_And_or == "or") && (input$selected_tax != "" |input$selected_PFAM_accession != "" |input$selected_KEGG != "" |input$selected_COG != "" | input$selected_dbCAN_family != ""| input$selected_Rfam_accession != "" | input$selected_Others != "" | input$selected_egbestax != "") ) {
-        big_tbls = big_tbl %>% select(GeneID,
+      } else if ((input$selected_And_or == "or") && (input$selected_tax_CAT != "" | input$selected_tax != "" |input$selected_PFAM_accession != "" |input$selected_KEGG != "" |input$selected_COG != "" | input$selected_dbCAN_family != ""| input$selected_Rfam_accession != "" | input$selected_Others != "" | input$selected_egbestax != "") ) {
+
+         big_tbls = arrow::open_dataset(paste(directorio_db,"big_tbl.parquet", sep="/"),format = "parquet") %>% dplyr::select(GeneID,
                                       Preferred_name,
                                       dbCAN_family, RFAM_description,
                                       RFAM_accession,
@@ -332,7 +333,7 @@ shinyApp(
                                       best_tax_level,
                                       CAT_assigned_taxonomy,
                                       MMseq2_assigned_taxonomy
-        ) %>% rename("best_tax_level"="Eggnog_best_tax_level")
+        ) %>% dplyr::rename("Eggnog_best_tax_level"="best_tax_level") %>% dplyr::collect() 
         
         list_df = vector("list", 9)
         if (input$selected_tax != "") {
@@ -340,7 +341,7 @@ shinyApp(
           if (exists("list_df1")) { list_df[[1]] <- list_df1 }
         }
         if (input$selected_PFAM_accession != "") {
-          try(list_df2 <- big_tbls %>% filter(grepl(input$selected_PFAM_accession,PFAM_accession, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect(), silent =T)
+          try(list_df2 <- big_tbls %>% filter(grepl(input$selected_PFAM_accession,PFAM_accession, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% collect(), silent =T)
           if (exists("list_df2")) { list_df[[2]] <- list_df2 }
         }
         if (input$selected_KEGG != "") {
@@ -368,7 +369,7 @@ shinyApp(
           if (exists("list_df8")) { list_df[[8]] <- list_df8 }
         }
         
-        if (selected_tax_CAT != "") {
+        if (input$selected_tax_CAT != "") {
           try(list_df9 <- big_tbls %>% filter(grepl(input$selected_tax_CAT,CAT_assigned_taxonomy, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect(), silent =T)
           if (exists("list_df9")) { list_df[[9]] <- list_df9 }
         }
