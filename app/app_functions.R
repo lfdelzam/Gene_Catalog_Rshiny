@@ -9,10 +9,10 @@ path_to_db <- paste(directorio_db,"DNA/rep_genes.fna", sep="/")
 Max_num_query <- 100 #Default
 C_pus <- 8
 
-if (!exists("big_tbl")) big_tbl <- readRDS(paste(directorio_db,"big_tbl.rds", sep="/"))
 if (!exists("ref_coords")) ref_coords<-readRDS(paste(directorio_db, "ref_coords.rds", sep="/"))
-if (!exists("cluster_df") ) cluster_df<-readRDS(paste(directorio_db, "cluster_df.rds", sep="/"))
-
+#if (!exists("big_tbl")) big_tbl<-readRDS(paste(directorio_db, "big_tbl_red.rds", sep="/"))
+#if (!exists("cluster_dfco")) cluster_dfco<-readRDS(paste(directorio_db, "cluster_dfco.rds", sep="/"))
+#if (!exists("cluster_dfin")) cluster_dfin<-readRDS(paste(directorio_db, "cluster_dfin.rds", sep="/"))
 #Functions
 
 cluster <- new_cluster(C_pus)
@@ -52,21 +52,9 @@ Hit_blast <- function(B_type, query, Cpus, N_hits, Evalue, minPer_Iden, minPer_a
 }
 
 get_annotation <- function(selected_hit) {
-  Annotation_and_taxonomy_result <- big_tbl %>% filter(GeneID %in% selected_hit) %>% select(GeneID,
-                                                                                            Preferred_name,
-                                                                                            dbCAN_family, RFAM_description,
-                                                                                            RFAM_accession,
-                                                                                            PFAM_family,
-                                                                                            PFAM_accession,
-                                                                                            EC,
-                                                                                            COG,
-                                                                                            COG_cat,
-                                                                                            KEGG,
-                                                                                            Description,
-                                                                                            best_tax_level,
-                                                                                            CAT_assigned_taxonomy,
-                                                                                            MMseq2_assigned_taxonomy
-  ) %>% rename("best_tax_level"="Eggnog_best_tax_level")
+
+#  Annotation_and_taxonomy_result <- big_tbl %>% dplyr::filter(GeneID %in% selected_hit) %>% partition(cluster) %>% collect()
+  Annotation_and_taxonomy_result <- arrow::open_dataset(paste(directorio_db,"big_tbl_red.parquet", sep="/"), format="parquet") %>% dplyr::filter(GeneID %in% selected_hit) %>% dplyr::collect() 
   
 }
 
@@ -84,9 +72,15 @@ get_localisation <- function(selected_hit) {
   co_hits=selected_hit[grep(co_patern,selected_hit)]
   eq_ind_genes=c()
   if (length(co_hits) > 0) {
+    
+    #co_genes_df <- cluster_dfco %>% dplyr::filter(Rep %in% co_hits) %>% partition(cluster) %>% collect()
+    co_genes_df <- arrow::open_dataset(paste(directorio_db,"cluster_dfco.parquet", sep="/"), format="parquet") %>% dplyr::filter(Rep %in% co_hits) %>% dplyr::collect() 
+    
 
     for (coa in co_hits) {
-      ind_genes=cluster_df %>% filter(Rep == coa)
+
+      ind_genes<- co_genes_df %>% dplyr::filter(Rep == coa) #%>% partition(cluster) %>% collect()
+
       eq_ind_genes=c(eq_ind_genes,
                      unique(
                        sapply(ind_genes$genes_in_cluster, function(x) deconv_clusters(x, co_patern))
@@ -99,8 +93,15 @@ get_localisation <- function(selected_hit) {
     ia_genes=c()
     if (length(ind_hits) > 0) {
       
+      #ind_genes_df <- cluster_dfin %>% dplyr::filter(Rep %in% ind_hits) %>% partition(cluster) %>% collect()
+      ind_genes_df <- arrow::open_dataset(paste(directorio_db,"cluster_dfin.parquet", sep="/"), format="parquet") %>% dplyr::filter(Rep %in% ind_hits) %>% dplyr::collect() 
+      
+      
       for (ia in ind_hits) {
-        ind_genes=cluster_df %>% filter(Rep == ia)
+
+        ind_genes<-ind_genes_df %>% dplyr::filter(Rep == ia) #%>% partition(cluster) %>% collect()
+          #arrow::open_dataset(paste(directorio_db,"cluster_dfin.parquet", sep="/"),format="parquet") %>% dplyr::filter(Rep == ia) %>% dplyr::collect() 
+
         ia_genes=c(ia_genes,
                    unique(
                      sapply(ind_genes$genes_in_cluster, function(x) deconv_clusters(x, co_patern))
@@ -114,8 +115,11 @@ get_localisation <- function(selected_hit) {
   selectes=unique(sapply(Sel_hits, dash_split))
   if (!is.null(selectes[[1]])) {
 
-    hit_seqs <- ref_coords %>% filter(ref_id %in% selectes) %>% partition(cluster) %>% collect()
-    if (nrow(hit_seqs) >0) {
+
+    hit_seqs <- ref_coords %>% filter(ref_id %in% selectes) %>% partition(cluster) %>% collect() 
+    #hit_seqs <- arrow::open_dataset(paste(directorio_db,"ref_coords.parquet", sep="/"), format="parquet") %>% dplyr::filter(ref_id %in% selectes) %>% dplyr::collect()  
+    
+      if (nrow(hit_seqs) >0) {
       coordinates(hit_seqs) <- ~Lon + Lat
       
       map<-leaflet(hit_seqs) %>% addTiles() %>% addCircles() %>%
@@ -153,4 +157,5 @@ expand_kegg <- function(kegg_idin){
   return(df)
 }
 
+          
 

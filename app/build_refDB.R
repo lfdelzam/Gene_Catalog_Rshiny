@@ -1,4 +1,7 @@
 rm(list = ls())
+list_of_packages <- c("tidyverse","multidplyr","arrow")
+
+for (s in list_of_packages) { suppressPackageStartupMessages(library(s, character.only = TRUE)) }
 
 C_pus <- 8
 
@@ -42,7 +45,7 @@ COG_list<-function(x ,sep){
 
 cluster <- new_cluster(C_pus)
 
-if ( !file.exists(paste(directorio_db, "big_tbl.rds", sep="/") )) {
+if ( !file.exists(paste(directorio_db, "big_tbl_red.parquet", sep="/") )) {
   
   if ( !file.exists(paste(directorio_db, "tax.rds", sep="/") )) {
     tax <- read_tsv(path_to_taxonomy_db, show_col_types = FALSE, col_names=F)
@@ -65,7 +68,7 @@ if ( !file.exists(paste(directorio_db, "big_tbl.rds", sep="/") )) {
     ann <- read_tsv(path_to_annot_db, show_col_types = FALSE, col_names=T)
     colnames(ann)[1] <- "GeneID"
     
-    ann <- ann %>% rowwise() %>% #so each command is performed separatly on each row
+    ann <- ann %>% rowwise() %>% #so each command is performed separately on each row
       mutate(KEGG = KEEG_list(KEGG_ko, ","), .before =6) %>%
       mutate(COG = COG_list(eggNOG_OGs, ","), .before =6) %>% partition(cluster) %>% collect()
     
@@ -75,8 +78,43 @@ if ( !file.exists(paste(directorio_db, "big_tbl.rds", sep="/") )) {
   if (file.exists(path_to_taxonomy_db_cat)) { big_tbl <- tax_b %>%  full_join(ann, by = "GeneID") } else {
     big_tbl <- tax %>%  full_join(ann, by = "GeneID") }
   
+  big_tbl <- big_tbl %>% select(GeneID,Preferred_name,dbCAN_family, RFAM_accession,
+                                PFAM_accession,EC, COG,COG_cat,
+                                KEGG,Description,best_tax_level,
+                                CAT_assigned_taxonomy,MMseq2_assigned_taxonomy
+    ) %>% rename("best_tax_level"="Eggnog_best_tax_level") %>% partition(cluster) %>% collect()
   
-  saveRDS(big_tbl, file=paste(directorio_db,"big_tbl.rds", sep="/"))
+  #saveRDS(big_tbl, file=paste(directorio_db,"big_tbl_red.rds", sep="/"))
+
+  btmp <- big_tbl %>% dplyr::filter(MMseq2_assigned_taxonomy != "unclassified")
+  write_parquet(btmp,paste(directorio_db, paste0("big_tbl","MMseq2_assigned_taxonomy",".parquet"), sep="/") )
+  rm(btmp)
+  btmp <- big_tbl %>% dplyr::filter(CAT_assigned_taxonomy != "unclassified") 
+  write_parquet(btmp,paste(directorio_db, paste0("big_tbl","CAT_assigned_taxonomy",".parquet"), sep="/") )
+  rm(btmp)
+  btmp <-big_tbl %>% dplyr::filter(!is.na(RFAM_accession)) %>% dplyr::filter(RFAM_accession != "-")
+  write_parquet(btmp,paste(directorio_db, paste0("big_tbl","RFAM_accession",".parquet"), sep="/") )
+  rm(btmp)
+  btmp <-big_tbl %>% dplyr::filter(!is.na(PFAM_accession) ) %>% dplyr::filter(PFAM_accession != "-")
+  write_parquet(btmp,paste(directorio_db, paste0("big_tbl","PFAM_accession",".parquet"), sep="/") )
+  rm(btmp)
+  btmp <-big_tbl %>% dplyr::filter(!is.na(KEGG) ) %>% dplyr::filter(KEGG != "-")
+  write_parquet(btmp,paste(directorio_db, paste0("big_tbl","KEGG",".parquet"), sep="/") )
+  rm(btmp)
+  btmp <-big_tbl %>% dplyr::filter(!is.na(COG) ) %>% dplyr::filter( COG != "-")
+  write_parquet(btmp,paste(directorio_db, paste0("big_tbl","COG",".parquet"), sep="/") )
+  rm(btmp)
+  btmp <-big_tbl %>% dplyr::filter(!is.na(dbCAN_family) ) %>% dplyr::filter( dbCAN_family != "-")
+  write_parquet(btmp,paste(directorio_db, paste0("big_tbl","dbCAN_family",".parquet"), sep="/") )
+  rm(btmp)
+  btmp <-big_tbl %>% dplyr::filter(!is.na(Preferred_name) ) %>% dplyr::filter( Preferred_name != "-" )
+  write_parquet(btmp,paste(directorio_db, paste0("big_tbl","Preferred_name",".parquet"), sep="/") )
+  rm(btmp)
+  btmp <-big_tbl %>% dplyr::filter(!is.na(Eggnog_best_tax_level) ) %>% dplyr::filter( Eggnog_best_tax_level != "-" )
+  write_parquet(btmp,paste(directorio_db, paste0("big_tbl","Eggnog_best_tax_level",".parquet"), sep="/") )
+  rm(btmp)
+  
+  write_parquet(big_tbl, paste(directorio_db,"big_tbl_red.parquet", sep="/"))
   
 }
 
@@ -97,12 +135,19 @@ if (!file.exists(paste(directorio_db, "ref_coords.rds", sep="/"))) {
     mutate(Lon=as.numeric(Lon), Lat=as.numeric(Lat)) %>% partition(cluster) %>% collect()
   
   saveRDS(ref_coords, file=paste(directorio_db, "ref_coords.rds", sep="/"))
+  #write_parquet(ref_coords, paste(directorio_db, "ref_coords.parquet", sep="/"))
 }
 
 
-if (file.exists(path_to_clusters) & !exists("cluster_df") ) {
+if (file.exists(path_to_clusters) & !file.exists(paste(directorio_db, "cluster_dfco.parquet", sep="/") )) {
   cluster_df<-read_tsv(path_to_clusters, col_names = c("Rep", "genes_in_cluster"), num_threads = C_pus, show_col_types = FALSE)
   
-  saveRDS(cluster_df, file=paste(directorio_db, "cluster_df.rds", sep="/"))
+  #saveRDS(cluster_df, file=paste(directorio_db, "cluster_df.rds", sep="/"))
+  cluster_dfco <- cluster_df[grep("CO::", cluster_df[[1]]),]
+  cluster_dfin <- cluster_df[-grep("CO::", cluster_df[[1]]),]
+  
+  write_parquet(cluster_dfin, paste(directorio_db, "cluster_dfin.parquet", sep="/"))
+  write_parquet(cluster_dfco, paste(directorio_db, "cluster_dfco.parquet", sep="/"))
   
 }
+

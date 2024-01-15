@@ -6,8 +6,8 @@ FROM rocker/shiny:latest
 RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y git libxml2-dev libmagick++-dev \
-    wget libgomp1 \  
-    libssl-dev \     
+    wget libgomp1 \
+    libssl-dev \
     make \
     pandoc && \
     apt-get clean && \
@@ -30,13 +30,12 @@ RUN R -e "install.packages('remotes')"
 RUN R -e "install.packages('BiocManager')"
 RUN R -e "BiocManager::install('KEGGREST')"
 RUN R -e "remotes::install_version('tidyverse', version = '2.0.0', dependencies= T)"
+RUN R -e "remotes::install_version('arrow', version = '14.0.0', dependencies= T)"
 RUN R -e "remotes::install_version('data.table', version = '1.14.8', dependencies= T)"
-#RUN R -e "remotes::install_version('rBLAST', version = '0.99.2', dependencies= T)"
 RUN R -e "remotes::install_version('rBLAST', repos = 'https://mhahsler.r-universe.dev', dependencies= T)"
 RUN R -e "remotes::install_version('leaflet', version = '2.1.2', dependencies= T)"
 RUN R -e "remotes::install_version('sp', version = '1.6-1', dependencies= T)"
 RUN R -e "remotes::install_version('magrittr', version = '2.0.3', dependencies= T)"
-#RUN R -e "remotes::install_version('KEGGREST', version = '1.38.0', dependencies= T)"
 RUN R -e "remotes::install_version('shinythemes', version = '1.2.0', dependencies= T)"
 RUN R -e "remotes::install_version('DT', version = '0.28', dependencies= T)"
 RUN R -e "remotes::install_version('shinyjs', version = '2.1.0', dependencies= T)"
