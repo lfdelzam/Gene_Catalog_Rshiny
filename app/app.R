@@ -1,9 +1,8 @@
 list_of_packages <- c("tidyverse", "data.table", "rBLAST", "leaflet", "sp", "magrittr", "KEGGREST", "shiny", "shinythemes", "DT","shinyjs","vembedr", "multidplyr","shinybusy","arrow")
 
-for (s in list_of_packages) { suppressPackageStartupMessages(library(s, character.only = TRUE)) }
+for (s in list_of_packages) { suppressPackageStartupMessages(library(s, character.only = TRUE, warn.conflicts = FALSE, quietly=T)) }
 
 source("app_functions.R")
-
 
 shinyApp(
   ui=fluidPage( theme = shinytheme("spacelab"),
@@ -261,129 +260,168 @@ shinyApp(
       FThits <- NULL
       if ((input$selected_And_or == "and") && (input$selected_tax_CAT != "" | input$selected_tax != "" |input$selected_PFAM_accession != "" |input$selected_KEGG != "" |input$selected_COG != "" | input$selected_dbCAN_family != ""| input$selected_Rfam_accession != "" | input$selected_Others != "" | input$selected_egbestax != "") ) {
         
-        FThits <- arrow::open_dataset(paste(directorio_db,"big_tbl.parquet", sep="/"),format = "parquet") %>% dplyr::select(GeneID,
-                                     Preferred_name,
-                                     dbCAN_family, RFAM_description,
-                                     RFAM_accession,
-                                     PFAM_family,
-                                     PFAM_accession,
-                                     EC,
-                                     COG,
-                                     COG_cat,
-                                     KEGG,
-                                     Description,
-                                     best_tax_level,
-                                     CAT_assigned_taxonomy,
-                                     MMseq2_assigned_taxonomy
-        ) %>% dplyr::rename("Eggnog_best_tax_level"="best_tax_level") %>% dplyr::collect() 
+      #  FThits <- big_tbl 
+      #  FThits <- arrow::open_dataset(paste(directorio_db,"big_tbl_red.parquet", sep="/"), format="parquet") %>% dplyr::collect()
+  
+        First_time =T
+        keep_searching = T
         
-        if (input$selected_tax != "" && !is.null(FThits)) {
-          try(FThitsTa <- FThits %>% filter(grepl(input$selected_tax,MMseq2_assigned_taxonomy, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect() , silent = T)
-          if (exists("FThitsTa")) { FThits <- FThitsTa } else {FThits <- NULL}
-        }
-        
-        if (input$selected_tax_CAT != "" && !is.null(FThits)) {
-          try(FThitsTaC <- FThits %>% filter(grepl(input$selected_tax_CAT,CAT_assigned_taxonomy, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect() , silent = T)
-          if (exists("FThitsTaC")) { FThits <- FThitsTaC } else {FThits <- NULL}
-        }
-        
-        if (input$selected_PFAM_accession != "" && !is.null(FThits)) {
-          
-          try(FThitsTb <- FThits %>% filter(grepl(input$selected_PFAM_accession,PFAM_accession, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect(), silent = T)
-          if (exists("FThitsTb")) { FThits <- FThitsTb } else {FThits <- NULL}
-        }
-        if (input$selected_KEGG != "" && !is.null(FThits)) {
-          try(FThitsTc <- FThits %>% filter(grepl(input$selected_KEGG,KEGG), ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching) %>% partition(cluster) %>% collect(), silent = T)
-          if (exists("FThitsTc")) { FThits <- FThitsTc } else {FThits <- NULL}
-        }
-        if (input$selected_COG != "" && !is.null(FThits)) {
-          try(FThitsTd <- FThits %>% filter(grepl(input$selected_COG,COG), ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching) %>% partition(cluster) %>% collect(), silent = T)
-          if (exists("FThitsTd")) { FThits <- FThitsTd } else {FThits <- NULL}
-        }
-        if (input$selected_dbCAN_family != "" && !is.null(FThits)) {
-          try(FThitsTe <- FThits %>% filter(grepl(input$selected_dbCAN_family,dbCAN_family, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect(), silent = T)
-          if (exists("FThitsTe")) { FThits <- FThitsTe } else {FThits <- NULL}
-        }
-        if (input$selected_Rfam_accession != "" && !is.null(FThits)) {
+        if (input$selected_Rfam_accession != "" && keep_searching) {
+          if (First_time) {
+            FThits <- arrow::open_dataset(paste(directorio_db,"big_tblRFAM_accession.parquet", sep="/"), format="parquet") %>% dplyr::collect() 
+            First_time = F
+          }
           try(FThitsTf <- FThits %>% filter(grepl(input$selected_Rfam_accession,RFAM_accession, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect(), silent = T)
-          if (exists("FThitsTf")) { FThits <- FThitsTf } else {FThits <- NULL}
-        }
-        if (input$selected_Others != "" && !is.null(FThits)) {
-          try(FThitsTg <- FThits %>% filter(grepl(input$selected_Others,Preferred_name, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect(), silent = T)
-          if (exists("FThitsTg")) { FThits <- FThitsTg} else {FThits <- NULL}
-        }
-        if (input$selected_egbestax != "" && !is.null(FThits)) {
-          try(FThitsTh <- FThits %>% filter(grepl(input$selected_egbestax,Eggnog_best_tax_level, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect(), silent = T)
-          if (exists("FThitsTh")) { FThits <- FThitsTh} else {FThits <- NULL}
+          if (exists("FThitsTf")) { FThits <- FThitsTf; rm(FThitsTf)  } else {FThits <- NULL ; keep_searching = F}
         }
         
-      } else if ((input$selected_And_or == "or") && (input$selected_tax_CAT != "" | input$selected_tax != "" |input$selected_PFAM_accession != "" |input$selected_KEGG != "" |input$selected_COG != "" | input$selected_dbCAN_family != ""| input$selected_Rfam_accession != "" | input$selected_Others != "" | input$selected_egbestax != "") ) {
-
-         big_tbls = arrow::open_dataset(paste(directorio_db,"big_tbl.parquet", sep="/"),format = "parquet") %>% dplyr::select(GeneID,
-                                      Preferred_name,
-                                      dbCAN_family, RFAM_description,
-                                      RFAM_accession,
-                                      PFAM_family,
-                                      PFAM_accession,
-                                      EC,
-                                      COG,
-                                      COG_cat,
-                                      KEGG,
-                                      Description,
-                                      best_tax_level,
-                                      CAT_assigned_taxonomy,
-                                      MMseq2_assigned_taxonomy
-        ) %>% dplyr::rename("Eggnog_best_tax_level"="best_tax_level") %>% dplyr::collect() 
+        if (input$selected_dbCAN_family != "" && keep_searching) {
+          if (First_time) {
+            FThits <- arrow::open_dataset(paste(directorio_db,"big_tbldbCAN_family.parquet", sep="/"), format="parquet") %>% dplyr::collect() 
+            First_time = F
+          }
+          try(FThitsTe <- FThits %>% filter(grepl(input$selected_dbCAN_family,dbCAN_family, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect(), silent = T)
+          if (exists("FThitsTe")) { FThits <- FThitsTe; rm(FThitsTe)  } else {FThits <- NULL ; keep_searching = F}
+        }
+        
+        if (input$selected_Others != "" && keep_searching) {
+          if (First_time) {
+            FThits <- arrow::open_dataset(paste(directorio_db,"big_tblPreferred_name.parquet", sep="/"), format="parquet") %>% dplyr::collect() 
+            First_time = F
+          }
+          try(FThitsTg <- FThits %>% filter(grepl(input$selected_Others,Preferred_name, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect(), silent = T)
+          if (exists("FThitsTg")) { FThits <- FThitsTg; rm(FThitsTg) } else {FThits <- NULL ; keep_searching = F}
+        }
+        
+        if (input$selected_KEGG != "" && keep_searching) {
+         
+          if (First_time) {
+            FThits <- arrow::open_dataset(paste(directorio_db,"big_tblKEGG.parquet", sep="/"), format="parquet") %>% dplyr::collect() 
+            First_time = F
+          }
+          
+          try(FThitsTc <- FThits %>% filter(grepl(input$selected_KEGG, KEGG, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect(), silent = T)
+          if (exists("FThitsTc")) { FThits <- FThitsTc ; rm(FThitsTc)  } else {FThits <- NULL ; keep_searching = F }
+        }
+        
+        if (input$selected_PFAM_accession != "" && keep_searching) {
+          if (First_time) {
+            FThits <- arrow::open_dataset(paste(directorio_db,"big_tblPFAM_accession.parquet", sep="/"), format="parquet") %>% dplyr::collect() 
+            First_time = F
+          }
+          try(FThitsTb <- FThits %>% filter(grepl(input$selected_PFAM_accession,PFAM_accession, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect(), silent = T)
+          if (exists("FThitsTb")) { FThits <- FThitsTb ; rm(FThitsTb)  } else {FThits <- NULL ; keep_searching = F}
+        }
+        if (input$selected_COG != "" && keep_searching ) {
+          if (First_time) {
+            FThits <- arrow::open_dataset(paste(directorio_db,"big_tblCOG.parquet", sep="/"), format="parquet") %>% dplyr::collect() 
+            First_time = F
+          }
+        
+          try(FThitsTd <- FThits %>% filter(grepl(input$selected_COG,COG, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect(), silent = T)
+          if (exists("FThitsTd")) { FThits <- FThitsTd ; rm(FThitsTd)  } else {FThits <- NULL ; keep_searching = F}
+        }
+        
+        if (input$selected_egbestax != "" && keep_searching) {
+          if (First_time) {
+            FThits <- arrow::open_dataset(paste(directorio_db,"big_tblEggnog_best_tax_level.parquet", sep="/"), format="parquet") %>% dplyr::collect() 
+            First_time = F
+          }
+          try(FThitsTh <- FThits %>% filter(grepl(input$selected_egbestax,Eggnog_best_tax_level, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect(), silent = T)
+          if (exists("FThitsTh")) { FThits <- FThitsTh; rm(FThitsTh) } else {FThits <- NULL ; keep_searching = F}
+        }
+        
+        
+        if (input$selected_tax_CAT != "" && keep_searching) {
+          if (First_time) {
+            FThits <- arrow::open_dataset(paste(directorio_db,"big_tblCAT_assigned_taxonomy.parquet", sep="/"), format="parquet") %>% dplyr::collect() 
+            First_time = F
+          }
+          try(FThitsTaC <- FThits %>% filter(grepl(input$selected_tax_CAT,CAT_assigned_taxonomy, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect() , silent = T)
+          if (exists("FThitsTaC")) { FThits <- FThitsTaC ; rm(FThitsTaC)  } else { FThits <- NULL ; keep_searching = F}
+        }
+        
+        if (input$selected_tax != "" && keep_searching) {
+          
+          if (First_time) {
+            FThits <- arrow::open_dataset(paste(directorio_db,"big_tblMMseq2_assigned_taxonomy.parquet", sep="/"), format="parquet") %>% dplyr::collect() 
+            First_time = F
+          }
+          
+          try(FThitsTa <- FThits %>% filter(grepl(input$selected_tax,MMseq2_assigned_taxonomy, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% multidplyr::partition(cluster) %>% dplyr::collect() , silent = T)
+          if (exists("FThitsTa")) { FThits <- FThitsTa; rm(FThitsTa) } else {FThits <- NULL ; keep_searching = F}
+        }
+        
+        
+      } else if ((input$selected_And_or == "or") && (input$selected_tax_CAT != "" | input$selected_tax != "" | input$selected_PFAM_accession != "" | input$selected_KEGG != "" |input$selected_COG != "" | input$selected_dbCAN_family != ""| input$selected_Rfam_accession != "" | input$selected_Others != "" | input$selected_egbestax != "") ) {
+           #big_tbl <- arrow::open_dataset(paste(directorio_db,"big_tbl_red.parquet", sep="/"), format="parquet")  %>% dplyr::collect() 
         
         list_df = vector("list", 9)
         if (input$selected_tax != "") {
-          try(list_df1 <- big_tbls %>% filter(grepl(input$selected_tax,MMseq2_assigned_taxonomy, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect(), silent =T)
-          if (exists("list_df1")) { list_df[[1]] <- list_df1 }
+          #big_tbls <- arrow::open_dataset(paste(directorio_db,"big_tblMMseq2_assigned_taxonomy.parquet", sep="/"), format="parquet") %>% dplyr::collect() 
+          try(list_df1 <- arrow::open_dataset(paste(directorio_db,"big_tblMMseq2_assigned_taxonomy.parquet", sep="/"), format="parquet") %>% dplyr::collect() %>% 
+                filter(grepl(input$selected_tax,MMseq2_assigned_taxonomy, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect(), silent =T)
+          if (exists("list_df1")) { list_df[[1]] <- list_df1; rm(list_df1)  }
         }
         if (input$selected_PFAM_accession != "") {
-          try(list_df2 <- big_tbls %>% filter(grepl(input$selected_PFAM_accession,PFAM_accession, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% collect(), silent =T)
-          if (exists("list_df2")) { list_df[[2]] <- list_df2 }
+          #big_tbls <- arrow::open_dataset(paste(directorio_db,"big_tblPFAM_accession.parquet", sep="/"), format="parquet") %>% dplyr::collect() 
+          try(list_df2 <- arrow::open_dataset(paste(directorio_db,"big_tblPFAM_accession.parquet", sep="/"), format="parquet") %>% dplyr::collect() %>%
+                filter(grepl(input$selected_PFAM_accession,PFAM_accession, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect(), silent =T)
+          if (exists("list_df2")) { list_df[[2]] <- list_df2; rm(list_df2) }
         }
         if (input$selected_KEGG != "") {
-          try(list_df3 <- big_tbls %>% filter(grepl(input$selected_KEGG,KEGG, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect(), silent =T)
-          if (exists("list_df3")) { list_df[[3]] <- list_df3 }
+         # big_tbls <- arrow::open_dataset(paste(directorio_db,"big_tblKEGG.parquet", sep="/"), format="parquet") %>% dplyr::collect() 
+          try(list_df3 <- arrow::open_dataset(paste(directorio_db,"big_tblKEGG.parquet", sep="/"), format="parquet") %>% dplyr::collect() %>% 
+                filter(grepl(input$selected_KEGG,KEGG, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect(), silent =T)
+          if (exists("list_df3")) { list_df[[3]] <- list_df3; rm(list_df3) }
         }
         if (input$selected_COG != "") {
-          try(list_df4 <- big_tbls %>% filter(grepl(input$selected_COG,COG, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect(), silent =T)
-          if (exists("list_df4")) { list_df[[4]] <- list_df4}
+         # big_tbls <- arrow::open_dataset(paste(directorio_db,"big_tblCOG.parquet", sep="/"), format="parquet") %>% dplyr::collect() 
+          try(list_df4 <-  arrow::open_dataset(paste(directorio_db,"big_tblCOG.parquet", sep="/"), format="parquet") %>% dplyr::collect() %>% 
+                filter(grepl(input$selected_COG,COG, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect(), silent =T)
+          if (exists("list_df4")) { list_df[[4]] <- list_df4; rm(list_df4)}
         }
         if (input$selected_dbCAN_family != "") {
-          try(list_df5<- big_tbls %>% filter(grepl(input$selected_dbCAN_family,dbCAN_family, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect(), silent =T)
-          if (exists("list_df5")) { list_df[[5]] <- list_df5 }
+          #big_tbls <- arrow::open_dataset(paste(directorio_db,"big_tbldbCAN_family.parquet", sep="/"), format="parquet") %>% dplyr::collect() 
+          try(list_df5<- arrow::open_dataset(paste(directorio_db,"big_tbldbCAN_family.parquet", sep="/"), format="parquet") %>% dplyr::collect() %>% 
+                filter(grepl(input$selected_dbCAN_family,dbCAN_family, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect(), silent =T)
+          if (exists("list_df5")) { list_df[[5]] <- list_df5; rm(list_df5) }
         }
         if (input$selected_Rfam_accession != "") {
-          try(list_df6 <- big_tbls %>% filter(grepl(input$selected_Rfam_accession,RFAM_accession, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect(), silent =T)
-          if (exists("list_df6")) { list_df[[6]] <- list_df6 }
+          #big_tbls <- arrow::open_dataset(paste(directorio_db,"big_tblRFAM_accession.parquet", sep="/"), format="parquet") %>% dplyr::collect() 
+          try(list_df6 <- arrow::open_dataset(paste(directorio_db,"big_tblRFAM_accession.parquet", sep="/"), format="parquet") %>% dplyr::collect() %>% 
+                filter(grepl(input$selected_Rfam_accession,RFAM_accession, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect(), silent =T)
+          if (exists("list_df6")) { list_df[[6]] <- list_df6; rm(list_df6) }
         }
         if (input$selected_Others != "") {
-          try(list_df7 <- big_tbls %>% filter(grepl(input$selected_Others,Preferred_name, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect(), silent =T)
-          if (exists("list_df7")) { list_df[[7]] <- list_df7 }
+          #big_tbls <- arrow::open_dataset(paste(directorio_db,"big_tblPreferred_name.parquet", sep="/"), format="parquet") %>% dplyr::collect() 
+          try(list_df7 <- arrow::open_dataset(paste(directorio_db,"big_tblPreferred_name.parquet", sep="/"), format="parquet") %>% dplyr::collect() %>% 
+                filter(grepl(input$selected_Others,Preferred_name, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect(), silent =T)
+          if (exists("list_df7")) { list_df[[7]] <- list_df7; rm(list_df7) }
         }
         if (input$selected_egbestax != "") {
-          try(list_df8 <- big_tbls %>% filter(grepl(input$selected_egbestax,Eggnog_best_tax_level, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect(), silent =T)
-          if (exists("list_df8")) { list_df[[8]] <- list_df8 }
+         # big_tbls <- arrow::open_dataset(paste(directorio_db,"big_tblEggnog_best_tax_level.parquet", sep="/"), format="parquet") %>% dplyr::collect() 
+          try(list_df8 <- arrow::open_dataset(paste(directorio_db,"big_tblEggnog_best_tax_level.parquet", sep="/"), format="parquet") %>% dplyr::collect() %>% 
+                filter(grepl(input$selected_egbestax,Eggnog_best_tax_level, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect(), silent =T)
+          if (exists("list_df8")) { list_df[[8]] <- list_df8; rm(list_df8) }
         }
         
         if (input$selected_tax_CAT != "") {
-          try(list_df9 <- big_tbls %>% filter(grepl(input$selected_tax_CAT,CAT_assigned_taxonomy, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect(), silent =T)
-          if (exists("list_df9")) { list_df[[9]] <- list_df9 }
+          #big_tbls <- arrow::open_dataset(paste(directorio_db,"big_tblCAT_assigned_taxonomy.parquet", sep="/"), format="parquet") %>% dplyr::collect() 
+          try(list_df9 <- arrow::open_dataset(paste(directorio_db,"big_tblCAT_assigned_taxonomy.parquet", sep="/"), format="parquet") %>% dplyr::collect() %>% 
+                filter(grepl(input$selected_tax_CAT,CAT_assigned_taxonomy, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect(), silent =T)
+          if (exists("list_df9")) { list_df[[9]] <- list_df9; rm(list_df9) }
         }
         
         list_df = list_df[lapply(list_df,length)>0]
         if (length(list_df) > 1) {
           FThits<- list_df %>% purrr::reduce(full_join, by='GeneID')
-          names(FThits) <-names(big_tbls)
+
         } else if (length(list_df) == 1) {
           FThits<- list_df[[1]]
-          names(FThits) <-names(big_tbls)
         }
       }
-      
+    
       removeModal()
       return(FThits)
     },  ignoreNULL= T, ignoreInit=F)
