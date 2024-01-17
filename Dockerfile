@@ -43,8 +43,18 @@ RUN R -e "remotes::install_version('vembedr', version = '0.1.5', dependencies= T
 RUN R -e "remotes::install_version('multidplyr', version = '0.1.3', dependencies= T)"
 RUN R -e "remotes::install_version('shinybusy', version = '0.3.1', dependencies= T)"
 
+# Custom added
+##RUN R -e "install.packages('logging')"
+RUN R -e "install.packages('log4r')"
+
 RUN rm -rf /srv/shiny-server/*
-COPY /app/* /srv/shiny-server/
+COPY /app/ /srv/shiny-server/app
+
+RUN cd /srv/shiny-server/ && \
+    sudo chown -R shiny:shiny /srv/shiny-server/app
+
+COPY shiny-customized.config /etc/shiny-server/shiny-server.conf
+# end custom modified
 
 USER shiny
 
