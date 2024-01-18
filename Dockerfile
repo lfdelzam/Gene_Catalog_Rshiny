@@ -2,6 +2,9 @@
 FROM rocker/shiny:latest
 #  "shiny"
 
+ENV USER=username
+RUN useradd -m -u 1000 $USER
+
 # Install system dependencies including those for tidyverse
 RUN apt-get update && \
     apt-get upgrade -y && \
@@ -47,6 +50,9 @@ RUN R -e "remotes::install_version('shinybusy', version = '0.3.1', dependencies=
 ##RUN R -e "install.packages('logging')"
 RUN R -e "install.packages('log4r')"
 
+COPY /data /data
+RUN  sudo chown -R shiny:shiny /data
+
 RUN rm -rf /srv/shiny-server/*
 COPY /app/ /srv/shiny-server/app
 
@@ -56,8 +62,7 @@ RUN cd /srv/shiny-server/ && \
 COPY shiny-customized.config /etc/shiny-server/shiny-server.conf
 # end custom modified
 
-USER shiny
-
+USER $USER
 EXPOSE 3838
 
 CMD ["/usr/bin/shiny-server"]
