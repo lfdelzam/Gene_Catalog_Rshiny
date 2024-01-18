@@ -62,6 +62,8 @@ RUN cd /srv/shiny-server/ && \
 COPY shiny-customized.config /etc/shiny-server/shiny-server.conf
 # end custom modified
 
+WORKDIR /srv/shiny-server/app
+
 USER $USER
 EXPOSE 3838
 
