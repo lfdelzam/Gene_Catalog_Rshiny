@@ -2,7 +2,7 @@
 FROM rocker/shiny:latest
 #  "shiny"
 
-ENV USER=username
+ENV USER=shiny
 RUN useradd -m -u 1000 $USER
 
 # Install system dependencies including those for tidyverse
