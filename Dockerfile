@@ -57,7 +57,8 @@ RUN rm -rf /srv/shiny-server/*
 COPY /app/ /srv/shiny-server/app
 
 RUN cd /srv/shiny-server/ && \
-    sudo chown -R shiny:shiny /srv/shiny-server/app
+    sudo chown -R shiny:shiny /srv/shiny-server/app && \
+    sudo chmod ug+x app/start-script.sh
 
 COPY shiny-customized.config /etc/shiny-server/shiny-server.conf
 # end custom modified
