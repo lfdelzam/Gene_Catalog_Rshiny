@@ -58,7 +58,7 @@ shinyApp(
                                                    
                                           ),
                                           tabPanel("Filter", icon=icon("filter"), br(),
-                                                   p(strong("Select one or several filters, one item per filter."),em("Regular expression can be used when Exact matching is set to FALSE.")),
+                                                   p(strong("Select one or several filters, one item per filter."),em("Regular expression can be used when Exact matching is set to FALSE. Please aim for specificity and utilize lower taxonomic levels to prevent exceeding RAM memory capacity")),
                                                    br(),br(),
                                                    fixedRow(column(width = 4, uiOutput("CAT_assigned_taxonomy")),column(width = 4,uiOutput("assigned_taxonomy"))),
                                                    fixedRow(column(width = 4, uiOutput("egbestax")),column(width = 4, uiOutput("dbCAN_family"))),         
@@ -219,8 +219,9 @@ shinyApp(
     })
     
     output$And_or<- renderUI({
-      selectInput("selected_And_or", "Logical operator", choices=c("and","or"), width="200px")
-    })
+#      selectInput("selected_And_or", "Logical operator", choices=c("and","or"), width="200px")
+      selectInput("selected_And_or", "Logical operator", choices=c("and"), width="200px")
+          })
     output$ignore_case<- renderUI({
       selectInput("selected_ignore_case", "Ignore case", choices=c("TRUE","FALSE"), width="200px")
     })
@@ -348,7 +349,7 @@ shinyApp(
             First_time = F
           }
           
-          try(FThitsTa <- FThits %>% filter(grepl(input$selected_tax,MMseq2_assigned_taxonomy, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% multidplyr::partition(cluster) %>% dplyr::collect() , silent = T)
+          try(FThitsTa <- FThits %>% filter(grepl(input$selected_tax,MMseq2_assigned_taxonomy, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect() , silent = T)
           if (exists("FThitsTa")) { FThits <- FThitsTa; rm(FThitsTa) } else {FThits <- NULL ; keep_searching = F}
         }
         
@@ -391,7 +392,10 @@ shinyApp(
           #big_tbls <- arrow::open_dataset(paste(directorio_db,"big_tblRFAM_accession.parquet", sep="/"), format="parquet") %>% dplyr::collect() 
           try(list_df6 <- arrow::open_dataset(paste(directorio_db,"big_tblRFAM_accession.parquet", sep="/"), format="parquet") %>% dplyr::collect() %>% 
                 filter(grepl(input$selected_Rfam_accession,RFAM_accession, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% partition(cluster) %>% collect(), silent =T)
-          if (exists("list_df6")) { list_df[[6]] <- list_df6; rm(list_df6) }
+      #    try(list_df6 <- arrow::open_dataset(paste(directorio_db,"big_tblRFAM_accession.parquet", sep="/"), format="parquet") %>% 
+      #          dplyr::filter(grepl(input$selected_Rfam_accession,RFAM_accession, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% dplyr::collect(), silent =T)
+          
+                    if (exists("list_df6")) { list_df[[6]] <- list_df6; rm(list_df6) }
         }
         if (input$selected_Others != "") {
           #big_tbls <- arrow::open_dataset(paste(directorio_db,"big_tblPreferred_name.parquet", sep="/"), format="parquet") %>% dplyr::collect() 
