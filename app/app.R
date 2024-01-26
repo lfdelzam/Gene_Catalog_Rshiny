@@ -101,7 +101,7 @@ shinyApp(
                           "that span the salinity and oxygen gradients of the Baltic Sea and capture seasonal dynamics at two locations.",br(),
                           "To obtain the gene catalogue, we used a mix-assembly approach described in Delgado et al. (2022).",br(),
                           "The gene catalogue has been functionally and taxonomically annotated, using the",
-                          a(href="https://github/lfdelzam/mix_assembly_pipeline", " Mix-assembly Gene Catalog pipeline." ),br(),br(),
+                          a(href="https://github.com/EnvGen/mix_assembly_pipeline", " Mix-assembly Gene Catalog pipeline." ),br(),br(),
                           "The BAltic Gene Set gene catalogue can be downloaded ",a(href="https://figshare.scilifelab.se/articles/dataset/BAGS_v1_BAltic_Gene_Set_gene_catalogue/16677252", "here")
                         ),
                         br(),
