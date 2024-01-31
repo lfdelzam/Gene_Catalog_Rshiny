@@ -13,7 +13,6 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-
 #    libcurl4-gnutls-dev \
 #    libcurl4-openssl-dev \
 # Install Blast
