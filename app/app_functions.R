@@ -6,7 +6,7 @@ path_to_db <- paste(directorio_db,"DNA/rep_genes.fna", sep="/")
 
 #Internal Blast parameters
 Max_num_query <- 100 #Default
-C_pus <- 12
+C_pus <- 8
 
 if (!exists("ref_coords")) ref_coords<-readRDS(paste(directorio_db, "ref_coords.rds", sep="/"))
 #Functions
@@ -16,6 +16,7 @@ cluster <- new_cluster(C_pus)
 dash_split <- function(x){
   unlist(strsplit(x,"::"))[1]
 }
+
 
 run_blast<-function(bl, query,cpus, hits, evalue, minIden,minalg, type) {
   lista=query@ranges@NAMES
@@ -39,11 +40,26 @@ Hit_blast <- function(B_type, query, Cpus, N_hits, Evalue, minPer_Iden, minPer_a
     RESULTS=run_blast(blp, query, Cpus, N_hits, Evalue, minPer_Iden, minPer_alg, B_type)
   }
   
+  
   if (B_type == "blastn") {
     bln <- blast(db=path_to_db, type = "blastn")
     RESULTS=run_blast(bln, query, Cpus, N_hits, Evalue, minPer_Iden, minPer_alg, B_type)
   }
   return(RESULTS)
+}
+
+get_AA_sequence<-function(hits) {
+  hits_list <- paste(as.character(hits), collapse=",")
+  blastdbcmd_args<-paste("-db", path_to_db_p,"-entry", hits_list,"-line_length",99999,"-outfmt %f", sep=" ")
+  AAseqs<-system2("blastdbcmd",blastdbcmd_args, stdout = T)
+  return(AAseqs)
+}
+
+get_DNA_sequence<-function(hits) {
+  hits_list <- paste(as.character(hits), collapse=",")
+  blastdbcmd_args<-paste("-db", path_to_db ,"-entry", hits_list,"-line_length",99999,"-outfmt %f", sep=" ")
+  DNAseqs<-system2("blastdbcmd",blastdbcmd_args, stdout = T)
+  return(DNAseqs)
 }
 
 get_annotation <- function(selected_hit) {
@@ -92,7 +108,7 @@ get_localisation <- function(selected_hit) {
       for (ia in ind_hits) {
 
         ind_genes<-ind_genes_df %>% dplyr::filter(Rep == ia) #%>% partition(cluster) %>% collect()
-
+   
         ia_genes=c(ia_genes,
                    unique(
                      sapply(ind_genes$genes_in_cluster, function(x) deconv_clusters(x, co_patern))
@@ -146,3 +162,6 @@ expand_kegg <- function(kegg_idin){
   
   return(df)
 }
+
+          
+
