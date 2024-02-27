@@ -1,4 +1,3 @@
-
 #Query folder
 directorio_qr <- "Query"
 directorio_db<- "/data"
@@ -10,9 +9,6 @@ Max_num_query <- 100 #Default
 C_pus <- 8
 
 if (!exists("ref_coords")) ref_coords<-readRDS(paste(directorio_db, "ref_coords.rds", sep="/"))
-#if (!exists("big_tbl")) big_tbl<-readRDS(paste(directorio_db, "big_tbl_red.rds", sep="/"))
-#if (!exists("cluster_dfco")) cluster_dfco<-readRDS(paste(directorio_db, "cluster_dfco.rds", sep="/"))
-#if (!exists("cluster_dfin")) cluster_dfin<-readRDS(paste(directorio_db, "cluster_dfin.rds", sep="/"))
 #Functions
 
 cluster <- new_cluster(C_pus)
@@ -20,6 +16,7 @@ cluster <- new_cluster(C_pus)
 dash_split <- function(x){
   unlist(strsplit(x,"::"))[1]
 }
+
 
 run_blast<-function(bl, query,cpus, hits, evalue, minIden,minalg, type) {
   lista=query@ranges@NAMES
@@ -51,9 +48,22 @@ Hit_blast <- function(B_type, query, Cpus, N_hits, Evalue, minPer_Iden, minPer_a
   return(RESULTS)
 }
 
+get_AA_sequence<-function(hits) {
+  hits_list <- paste(as.character(hits), collapse=",")
+  blastdbcmd_args<-paste("-db", path_to_db_p,"-entry", hits_list,"-line_length",99999,"-outfmt %f", sep=" ")
+  AAseqs<-system2("blastdbcmd",blastdbcmd_args, stdout = T)
+  return(AAseqs)
+}
+
+get_DNA_sequence<-function(hits) {
+  hits_list <- paste(as.character(hits), collapse=",")
+  blastdbcmd_args<-paste("-db", path_to_db ,"-entry", hits_list,"-line_length",99999,"-outfmt %f", sep=" ")
+  DNAseqs<-system2("blastdbcmd",blastdbcmd_args, stdout = T)
+  return(DNAseqs)
+}
+
 get_annotation <- function(selected_hit) {
 
-#  Annotation_and_taxonomy_result <- big_tbl %>% dplyr::filter(GeneID %in% selected_hit) %>% partition(cluster) %>% collect()
   Annotation_and_taxonomy_result <- arrow::open_dataset(paste(directorio_db,"big_tbl_red.parquet", sep="/"), format="parquet") %>% dplyr::filter(GeneID %in% selected_hit) %>% dplyr::collect() 
   
 }
@@ -73,7 +83,6 @@ get_localisation <- function(selected_hit) {
   eq_ind_genes=c()
   if (length(co_hits) > 0) {
     
-    #co_genes_df <- cluster_dfco %>% dplyr::filter(Rep %in% co_hits) %>% partition(cluster) %>% collect()
     co_genes_df <- arrow::open_dataset(paste(directorio_db,"cluster_dfco.parquet", sep="/"), format="parquet") %>% dplyr::filter(Rep %in% co_hits) %>% dplyr::collect() 
     
 
@@ -93,15 +102,13 @@ get_localisation <- function(selected_hit) {
     ia_genes=c()
     if (length(ind_hits) > 0) {
       
-      #ind_genes_df <- cluster_dfin %>% dplyr::filter(Rep %in% ind_hits) %>% partition(cluster) %>% collect()
       ind_genes_df <- arrow::open_dataset(paste(directorio_db,"cluster_dfin.parquet", sep="/"), format="parquet") %>% dplyr::filter(Rep %in% ind_hits) %>% dplyr::collect() 
       
       
       for (ia in ind_hits) {
 
         ind_genes<-ind_genes_df %>% dplyr::filter(Rep == ia) #%>% partition(cluster) %>% collect()
-          #arrow::open_dataset(paste(directorio_db,"cluster_dfin.parquet", sep="/"),format="parquet") %>% dplyr::filter(Rep == ia) %>% dplyr::collect() 
-
+   
         ia_genes=c(ia_genes,
                    unique(
                      sapply(ind_genes$genes_in_cluster, function(x) deconv_clusters(x, co_patern))
@@ -117,7 +124,6 @@ get_localisation <- function(selected_hit) {
 
 
     hit_seqs <- ref_coords %>% filter(ref_id %in% selectes) %>% partition(cluster) %>% collect() 
-    #hit_seqs <- arrow::open_dataset(paste(directorio_db,"ref_coords.parquet", sep="/"), format="parquet") %>% dplyr::filter(ref_id %in% selectes) %>% dplyr::collect()  
     
       if (nrow(hit_seqs) >0) {
       coordinates(hit_seqs) <- ~Lon + Lat

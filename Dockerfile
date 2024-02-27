@@ -16,7 +16,6 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-
 #    libcurl4-gnutls-dev \
 #    libcurl4-openssl-dev \
 # Install Blast
@@ -35,7 +34,8 @@ RUN R -e "BiocManager::install('KEGGREST')"
 RUN R -e "remotes::install_version('tidyverse', version = '2.0.0', dependencies= T)"
 RUN R -e "remotes::install_version('arrow', version = '14.0.0', dependencies= T)"
 RUN R -e "remotes::install_version('data.table', version = '1.14.8', dependencies= T)"
-RUN R -e "remotes::install_version('rBLAST', repos = 'https://mhahsler.r-universe.dev', dependencies= T)"
+#RUN R -e "remotes::install_version('rBLAST', repos = 'https://mhahsler.r-universe.dev', dependencies= T)"
+RUN R -e "remotes::install_github('mhahsler/rBLAST', dependencies= T)"
 RUN R -e "remotes::install_version('leaflet', version = '2.1.2', dependencies= T)"
 RUN R -e "remotes::install_version('sp', version = '1.6-1', dependencies= T)"
 RUN R -e "remotes::install_version('magrittr', version = '2.0.3', dependencies= T)"

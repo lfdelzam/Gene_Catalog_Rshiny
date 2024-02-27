@@ -86,44 +86,48 @@ if ( !file.exists(paste(directorio_db, "big_tbl_red.parquet", sep="/") )) {
   
   #saveRDS(big_tbl, file=paste(directorio_db,"big_tbl_red.rds", sep="/"))
 
-  btmp <- big_tbl %>% dplyr::filter(MMseq2_assigned_taxonomy != "unclassified")
-  write_parquet(btmp,paste(directorio_db, paste0("big_tbl","MMseq2_assigned_taxonomy",".parquet"), sep="/") )
+  btmp <- big_tbl %>% dplyr::filter(MMseq2_assigned_taxonomy != "unclassified") %>% dplyr::select(GeneID,MMseq2_assigned_taxonomy)
+  write_parquet(btmp,paste(directorio_db, paste0("big_tbl","MMseq2_assigned_taxonomy_S",".parquet"), sep="/") )
   rm(btmp)
-  btmp <- big_tbl %>% dplyr::filter(CAT_assigned_taxonomy != "unclassified") 
-  write_parquet(btmp,paste(directorio_db, paste0("big_tbl","CAT_assigned_taxonomy",".parquet"), sep="/") )
+  btmp <- big_tbl %>% dplyr::filter(CAT_assigned_taxonomy != "unclassified") %>% dplyr::select(GeneID,CAT_assigned_taxonomy)
+  write_parquet(btmp,paste(directorio_db, paste0("big_tbl","CAT_assigned_taxonomy_S",".parquet"), sep="/") )
   rm(btmp)
-  btmp <-big_tbl %>% dplyr::filter(!is.na(RFAM_accession)) %>% dplyr::filter(RFAM_accession != "-")
-  write_parquet(btmp,paste(directorio_db, paste0("big_tbl","RFAM_accession",".parquet"), sep="/") )
+  btmp <-big_tbl %>% dplyr::filter(!is.na(RFAM_accession)) %>% dplyr::filter(RFAM_accession != "-") %>% dplyr::select(GeneID,RFAM_accession)
+  write_parquet(btmp,paste(directorio_db, paste0("big_tbl","RFAM_accession_S",".parquet"), sep="/") )
   rm(btmp)
-  btmp <-big_tbl %>% dplyr::filter(!is.na(PFAM_accession) ) %>% dplyr::filter(PFAM_accession != "-")
-  write_parquet(btmp,paste(directorio_db, paste0("big_tbl","PFAM_accession",".parquet"), sep="/") )
+  btmp <-big_tbl %>% dplyr::filter(!is.na(PFAM_accession) ) %>% dplyr::filter(PFAM_accession != "-") %>% dplyr::select(GeneID,PFAM_accession)
+  write_parquet(btmp,paste(directorio_db, paste0("big_tbl","PFAM_accession_S",".parquet"), sep="/") )
   rm(btmp)
-  btmp <-big_tbl %>% dplyr::filter(!is.na(KEGG) ) %>% dplyr::filter(KEGG != "-")
-  write_parquet(btmp,paste(directorio_db, paste0("big_tbl","KEGG",".parquet"), sep="/") )
+  btmp <-big_tbl %>% dplyr::filter(!is.na(KEGG) ) %>% dplyr::filter(KEGG != "-") %>% dplyr::select(GeneID,KEGG)
+  write_parquet(btmp,paste(directorio_db, paste0("big_tbl","KEGG_S",".parquet"), sep="/") )
   rm(btmp)
-  btmp <-big_tbl %>% dplyr::filter(!is.na(COG) ) %>% dplyr::filter( COG != "-")
-  write_parquet(btmp,paste(directorio_db, paste0("big_tbl","COG",".parquet"), sep="/") )
+  btmp <-big_tbl %>% dplyr::filter(!is.na(COG) ) %>% dplyr::filter( COG != "-") %>% dplyr::select(GeneID,COG)
+  write_parquet(btmp,paste(directorio_db, paste0("big_tbl","COG_S",".parquet"), sep="/") )
   rm(btmp)
-  btmp <-big_tbl %>% dplyr::filter(!is.na(dbCAN_family) ) %>% dplyr::filter( dbCAN_family != "-")
-  write_parquet(btmp,paste(directorio_db, paste0("big_tbl","dbCAN_family",".parquet"), sep="/") )
+  btmp <-big_tbl %>% dplyr::filter(!is.na(dbCAN_family) ) %>% dplyr::filter(dbCAN_family != "-") %>% dplyr::select(GeneID,dbCAN_family)
+  write_parquet(btmp,paste(directorio_db, paste0("big_tbl","dbCAN_family_S",".parquet"), sep="/") )
   rm(btmp)
-  btmp <-big_tbl %>% dplyr::filter(!is.na(Preferred_name) ) %>% dplyr::filter( Preferred_name != "-" )
-  write_parquet(btmp,paste(directorio_db, paste0("big_tbl","Preferred_name",".parquet"), sep="/") )
+  btmp <-big_tbl %>% dplyr::filter(!is.na(Preferred_name) ) %>% dplyr::filter(Preferred_name != "-" ) %>% dplyr::select(GeneID,Preferred_name)
+  write_parquet(btmp,paste(directorio_db, paste0("big_tbl","Preferred_name_S",".parquet"), sep="/") )
   rm(btmp)
-  btmp <-big_tbl %>% dplyr::filter(!is.na(Eggnog_best_tax_level) ) %>% dplyr::filter( Eggnog_best_tax_level != "-" )
-  write_parquet(btmp,paste(directorio_db, paste0("big_tbl","Eggnog_best_tax_level",".parquet"), sep="/") )
+  btmp <-big_tbl %>% dplyr::filter(!is.na(Eggnog_best_tax_level) ) %>% dplyr::filter(Eggnog_best_tax_level != "-" ) %>% dplyr::select(GeneID,Eggnog_best_tax_level)
+  write_parquet(btmp,paste(directorio_db, paste0("big_tbl","Eggnog_best_tax_level_S",".parquet"), sep="/") )
   rm(btmp)
   
   write_parquet(big_tbl, paste(directorio_db,"big_tbl_red.parquet", sep="/"))
   
 }
 
-if ( !file.exists(paste(path_to_db, ".ndb", sep=""))) {
-  makeblastdb(path_to_db, dbtype = "nucl")
+if ( !file.exists(paste(path_to_db, ".ntf", sep=""))) {
+  #Before creating the database, remove no relevant information from the headers of fasta files 
+  #with the command sed -i s/".#.*"//g <path_to_db>
+  makeblastdb(path_to_db, dbtype = "nucl",args = "-parse_seqids" )
 }
 
-if ( !file.exists(paste(path_to_db_p, ".pto", sep=""))) {
-  makeblastdb(path_to_db_p, dbtype = "prot")
+if ( !file.exists(paste(path_to_db_p, ".ptf", sep=""))) {
+  #Before creating the database, remove no relevant information from the headers of fasta files 
+  #with the command sed -i s/".#.*"//g <path_to_db>
+  makeblastdb(path_to_db_p, dbtype = "prot",args = "-parse_seqids")
 }
 
 
