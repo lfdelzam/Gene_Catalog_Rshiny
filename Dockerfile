@@ -51,7 +51,7 @@ RUN R -e "remotes::install_version('shinybusy', version = '0.3.1', dependencies=
 RUN R -e "install.packages('log4r')"
 
 RUN mkdir data
-RUN  sudo chown -R shiny:shiny /data
+RUN sudo chown -R shiny:shiny /data
 
 RUN rm -rf /srv/shiny-server/*
 COPY /app/ /srv/shiny-server/app
