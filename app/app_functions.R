@@ -1,6 +1,6 @@
 #Query folder
 directorio_qr <- "Query"
-directorio_db<- "data"
+directorio_db<- "/data"
 path_to_db_p <- paste(directorio_db,"AA/rep_proteins.faa", sep="/")
 path_to_db <- paste(directorio_db,"DNA/rep_genes.fna", sep="/")
 

@@ -2,7 +2,26 @@ list_of_packages <- c("tidyverse", "data.table", "rBLAST", "leaflet", "sp", "mag
 
 for (s in list_of_packages) { suppressPackageStartupMessages(library(s, character.only = TRUE, warn.conflicts = FALSE, quietly=T)) }
 
-source("app_functions.R")
+# Logging
+library("log4r")
+logger <- log4r::logger("DEBUG")
+
+log4r::info(logger, "START app.R")
+
+tryCatch({
+  source("app_functions.R")
+}, error=function(e) {
+    log4r::warn(logger, e)
+}, warning=function(e) {
+    log4r::warn(logger, e)
+})
+
+# Perform some setup verifications
+log4r::debug(logger, "app.R. Performing some startup verifications")
+          path_to_query_n <- paste(directorio_qr, paste(session$token,"queryp.fna", sep="_"), sep="/")
+          fwrite(as.list(texti), file=path_to_query_n, quote = F)
+
+# End added custom code
 
 shinyApp(
   ui=fluidPage( theme = shinytheme("spacelab"),
@@ -168,10 +187,20 @@ shinyApp(
 
 
     blastresults <- eventReactive(input$run_blast, {
+      log4r::debug(logger, "Entered blastResults event.")
       text<-NULL
       if (grepl(">",isolate(input$query))){
         texti=isolate(input$query)
-        dir.create(directorio_qr,showWarnings = F,recursive = T)
+
+        tryCatch({
+          log4r::debug(logger, paste("blastresults event. Creating query folder = ", directorio_qr))
+          dir.create(directorio_qr,showWarnings = F,recursive = T)
+        }, error=function(e) {
+            log4r::warn(logger, e)
+        }, warning=function(e) {
+            log4r::warn(logger, e)
+        })
+
         if (input$B_type == "blastn") {
           path_to_query_n <- paste(directorio_qr, paste(session$token,"queryp.fna", sep="_"), sep="/")
           fwrite(as.list(texti), file=path_to_query_n, quote = F)
@@ -196,7 +225,14 @@ shinyApp(
       if (length(text) > Max_num_query) { stop(paste("Please provide a maximum of", Max_num_query, "queries", sep=" "))}
       showModal( modalDialog( "Running blast. It may take some minutes", add_busy_spinner(spin = "fingerprint") )   )
 
-      LISTA=Hit_blast(input$B_type, text, C_pus, input$N_hits, input$eval, input$minPerIden, input$minPeralg)
+      tryCatch({
+        log4r::debug(logger, "blastresults event. Calling Hit_blast()")
+        LISTA=Hit_blast(input$B_type, text, C_pus, input$N_hits, input$eval, input$minPerIden, input$minPeralg)
+      }, error=function(e) {
+          log4r::warn(logger, e)
+      }, warning=function(e) {
+          log4r::warn(logger, e)
+      })
 
       removeModal()
       return(LISTA)
@@ -257,6 +293,7 @@ shinyApp(
 
 
     Anotaxhits <- eventReactive({ input$go_anotax && !is.null(input$selected_table) && !is.null(input$blastResults_rows_selected)}, {
+      log4r::debug(logger, "Entered Anotaxhits() event")
       s = input$blastResults_rows_selected
       if (!is.null(s) ) {
         hit=as.character(blastresults()[[input$selected_table]][s, "SubjectID"])
@@ -268,65 +305,97 @@ shinyApp(
     },  ignoreNULL= T, ignoreInit=F)
 
     Filter_table <- eventReactive({ input$searchFT_2}, {
+      log4r::debug(logger, "Entered Filter_table() event")
       showModal(modalDialog( "Retrieving information. It may take some minutes", add_busy_spinner(spin = "fingerprint")) )
 
       FThits <- NULL
       
-        if ((input$selected_And_or == "and" | input$selected_And_or == "or") && (input$selected_tax_CAT != "" | input$selected_tax != "" |input$selected_PFAM_accession != "" |input$selected_KEGG != "" |input$selected_COG != "" | input$selected_dbCAN_family != ""| input$selected_Rfam_accession != "" | input$selected_Others != "" | input$selected_egbestax != "") ) {
-          
+      if ((input$selected_And_or == "and" | input$selected_And_or == "or") && (input$selected_tax_CAT != "" | input$selected_tax != "" |input$selected_PFAM_accession != "" |input$selected_KEGG != "" |input$selected_COG != "" | input$selected_dbCAN_family != ""| input$selected_Rfam_accession != "" | input$selected_Others != "" | input$selected_egbestax != "") ) {
         
         list_df = vector("list", 9)
  
         
-               if (input$selected_tax != "") {
+        if (input$selected_tax != "") {
+          log4r::debug(logger, "Input selected_tax")
+
           try(list_df1 <- arrow::open_dataset(paste(directorio_db,"big_tblMMseq2_assigned_taxonomy_S.parquet", sep="/"), format="parquet") %>% dplyr::collect() %>%
                 filter(grepl(input$selected_tax,MMseq2_assigned_taxonomy, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% select(GeneID) %>% partition(cluster) %>% collect(), silent =T)
           if (exists("list_df1")) { list_df[[1]] <- list_df1; rm(list_df1)  }
         }
         if (input$selected_PFAM_accession != "") {
+
+          log4r::debug(logger, "Input selected_PFAM_accession")
+
           try(list_df2 <- arrow::open_dataset(paste(directorio_db,"big_tblPFAM_accession_S.parquet", sep="/"), format="parquet") %>% dplyr::collect() %>%
                 filter(grepl(input$selected_PFAM_accession,PFAM_accession, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% select(GeneID) %>% partition(cluster) %>% collect(), silent =T)
           if (exists("list_df2")) { list_df[[2]] <- list_df2; rm(list_df2) }
         }
         if (input$selected_KEGG != "") {
+
+          log4r::debug(logger, "Input selected_KEGG")
+
           try(list_df3 <- arrow::open_dataset(paste(directorio_db,"big_tblKEGG_S.parquet", sep="/"), format="parquet") %>% dplyr::collect() %>%
                 filter(grepl(input$selected_KEGG,KEGG, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% select(GeneID) %>% partition(cluster) %>% collect(), silent =T)
           if (exists("list_df3")) { list_df[[3]] <- list_df3; rm(list_df3) }
         }
         if (input$selected_COG != "") {
+
+          log4r::debug(logger, "Input selected_COG")
+
           try(list_df4 <-  arrow::open_dataset(paste(directorio_db,"big_tblCOG_S.parquet", sep="/"), format="parquet") %>% dplyr::collect() %>%
                 filter(grepl(input$selected_COG,COG, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% select(GeneID) %>% partition(cluster) %>% collect(), silent =T)
           if (exists("list_df4")) { list_df[[4]] <- list_df4; rm(list_df4)}
         }
         if (input$selected_dbCAN_family != "") {
+
+          log4r::debug(logger, "Input selected_dbCAN_family")
+
           try(list_df5<- arrow::open_dataset(paste(directorio_db,"big_tbldbCAN_family_S.parquet", sep="/"), format="parquet") %>% dplyr::collect() %>%
                 filter(grepl(input$selected_dbCAN_family,dbCAN_family, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% select(GeneID) %>% partition(cluster) %>% collect(), silent =T)
           if (exists("list_df5")) { list_df[[5]] <- list_df5; rm(list_df5) }
         }
         if (input$selected_Rfam_accession != "") {
+
+          log4r::debug(logger, "Input selected_Rfam_accession")
+          try(list_df6 <- arrow::open_dataset(paste(directorio_db,"big_tblRFAM_accession_S.parquet", sep="/"), format="parquet") %>% dplyr::collect() %>%
+                filter(grepl(input$selected_Rfam_accession,RFAM_accession, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% select(GeneID) %>% partition(cluster) %>% collect(), silent =T)
+   
+                if (exists("list_df6")) { list_df[[6]] <- list_df6; rm(list_df6) }
+        }
+        if (input$selected_Others != "") {
+          log4r::debug(logger, "Input selected_Others")
+
           try(list_df6 <- arrow::open_dataset(paste(directorio_db,"big_tblRFAM_accession_S.parquet", sep="/"), format="parquet") %>% dplyr::collect() %>%
                 filter(grepl(input$selected_Rfam_accession,RFAM_accession, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% select(GeneID) %>% partition(cluster) %>% collect(), silent =T)
    
                     if (exists("list_df6")) { list_df[[6]] <- list_df6; rm(list_df6) }
         }
         if (input$selected_Others != "") {
+
           try(list_df7 <- arrow::open_dataset(paste(directorio_db,"big_tblPreferred_name_S.parquet", sep="/"), format="parquet") %>% dplyr::collect() %>%
                 filter(grepl(input$selected_Others,Preferred_name, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% select(GeneID) %>% partition(cluster) %>% collect(), silent =T)
           if (exists("list_df7")) { list_df[[7]] <- list_df7; rm(list_df7) }
         }
         if (input$selected_egbestax != "") {
+
+          log4r::debug(logger, "Input selected_egbestax")
+
           try(list_df8 <- arrow::open_dataset(paste(directorio_db,"big_tblEggnog_best_tax_level_S.parquet", sep="/"), format="parquet") %>% dplyr::collect() %>%
                 filter(grepl(input$selected_egbestax,Eggnog_best_tax_level, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% select(GeneID) %>% partition(cluster) %>% collect(), silent =T)
           if (exists("list_df8")) { list_df[[8]] <- list_df8; rm(list_df8) }
         }
 
         if (input$selected_tax_CAT != "") {
+
+          log4r::debug(logger, "Input selected_tax_CAT")
+
           try(list_df9 <- arrow::open_dataset(paste(directorio_db,"big_tblCAT_assigned_taxonomy_S.parquet", sep="/"), format="parquet") %>% dplyr::collect() %>%
                 filter(grepl(input$selected_tax_CAT,CAT_assigned_taxonomy, ignore.case = input$selected_ignore_case, fixed=input$selected_exact_matching)) %>% select(GeneID) %>% partition(cluster) %>% collect(), silent =T)
           if (exists("list_df9")) { list_df[[9]] <- list_df9; rm(list_df9) }
         }
 
         list_df = list_df[lapply(list_df,length)>0]
+        log4r::debug(logger, paste("list_df length = ", length(list_df)))
         if (length(list_df) > 1) {
           if (input$selected_And_or == "or") {FThit<- list_df %>% purrr::reduce(full_join, by='GeneID')  }
           if (input$selected_And_or == "and") {FThit<- list_df %>% purrr::reduce(inner_join, by='GeneID') }
@@ -353,6 +422,7 @@ shinyApp(
 
 
     Anotaxhits_all <- eventReactive({ input$go_anotax_all && !is.null(input$AnnotaxResults_rows_selected)}, {
+      log4r::debug(logger, "Entered Anotaxhits_all() event")
       s = input$AnnotaxResults_rows_selected
       if (!is.null(s) ) {
         hit=Filter_table()$GeneID[s]
@@ -452,8 +522,9 @@ shinyApp(
     )
 ####
 #extract sequences 
-    
+  
     DNA_hits <- eventReactive({ input$go_anotax && !is.null(input$selected_table) && !is.null(input$blastResults_rows_selected)}, {
+      log4r::debug(logger, "Entered DNA_hits() event")
       s = input$blastResults_rows_selected
       if (!is.null(s) ) {
         hit=as.character(blastresults()[[input$selected_table]][s, "SubjectID"])
@@ -466,6 +537,8 @@ shinyApp(
     
     
     DNA_hits_all <- eventReactive({ input$go_anotax_all && !is.null(input$AnnotaxResults_rows_selected)}, {
+      log4r::debug(logger, "Entered DNA_hits_all() event")
+
       s = input$AnnotaxResults_rows_selected
       if (!is.null(s) ) {
         hit=Filter_table()$GeneID[s]
@@ -478,6 +551,9 @@ shinyApp(
     },  ignoreNULL= T, ignoreInit=F)
     
     AA_hits <- eventReactive({ input$go_anotax && !is.null(input$selected_table) && !is.null(input$blastResults_rows_selected)}, {
+
+      log4r::debug(logger, "Entered AA_hits")
+
       s = input$blastResults_rows_selected
       if (!is.null(s) ) {
         hit=as.character(blastresults()[[input$selected_table]][s, "SubjectID"])
@@ -490,6 +566,9 @@ shinyApp(
     
     
     AA_hits_all <- eventReactive({ input$go_anotax_all && !is.null(input$AnnotaxResults_rows_selected)}, {
+
+      log4r::debug(logger, "Entered AA_hits_all() event")
+
       s = input$AnnotaxResults_rows_selected
       if (!is.null(s) ) {
         hit=Filter_table()$GeneID[s]
@@ -558,6 +637,7 @@ shinyApp(
 ####    
 
     Kegg <- eventReactive(input$Anotax_hits_rows_selected , {
+      log4r::debug(logger, "Entered Kegg() event")
       tmp <- NULL
       s = input$Anotax_hits_rows_selected
       if (length(s)) {

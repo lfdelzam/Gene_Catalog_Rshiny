@@ -2,12 +2,16 @@
 FROM rocker/shiny:latest
 #  "shiny"
 
+ENV USER=shiny
+#RUN useradd -m -u 1000 $USER
+
 # Install system dependencies including those for tidyverse
 RUN apt-get update && \
     apt-get upgrade -y && \
-    apt-get install -y git libxml2-dev libmagick++-dev \
-    wget libgomp1 \
-    libssl-dev \
+    apt-get install --no-install-recommends -y \
+    git libxml2-dev libmagick++-dev \
+    wget libgomp1 \  
+    libssl-dev \     
     make \
     pandoc && \
     apt-get clean && \
@@ -25,29 +29,50 @@ ENV PATH="/opt/ncbi-blast-2.13.0+/bin:${PATH}"
 
 # Install Basic Utility R Packages
 
-RUN R -e "install.packages('remotes')"
-RUN R -e "install.packages('BiocManager')"
-RUN R -e "BiocManager::install('KEGGREST')"
-RUN R -e "remotes::install_version('tidyverse', version = '2.0.0', dependencies= T)"
-RUN R -e "remotes::install_version('arrow', version = '14.0.0', dependencies= T)"
-RUN R -e "remotes::install_version('data.table', version = '1.14.8', dependencies= T)"
-#RUN R -e "remotes::install_version('rBLAST', repos = 'https://mhahsler.r-universe.dev', dependencies= T)"
-RUN R -e "remotes::install_github('mhahsler/rBLAST', dependencies= T)"
-RUN R -e "remotes::install_version('leaflet', version = '2.1.2', dependencies= T)"
-RUN R -e "remotes::install_version('sp', version = '1.6-1', dependencies= T)"
-RUN R -e "remotes::install_version('magrittr', version = '2.0.3', dependencies= T)"
-RUN R -e "remotes::install_version('shinythemes', version = '1.2.0', dependencies= T)"
-RUN R -e "remotes::install_version('DT', version = '0.28', dependencies= T)"
-RUN R -e "remotes::install_version('shinyjs', version = '2.1.0', dependencies= T)"
-RUN R -e "remotes::install_version('vembedr', version = '0.1.5', dependencies= T)"
-RUN R -e "remotes::install_version('multidplyr', version = '0.1.3', dependencies= T)"
-RUN R -e "remotes::install_version('shinybusy', version = '0.3.1', dependencies= T)"
+RUN R -e "install.packages('remotes')" \
+    && R -e "install.packages('BiocManager')" \
+    && R -e "BiocManager::install('KEGGREST')" \
+    && R -e "remotes::install_version('tidyverse', version = '2.0.0', dependencies= T)" \
+    && R -e "remotes::install_version('arrow', version = '14.0.0', dependencies= T)" \
+    && R -e "remotes::install_version('data.table', version = '1.14.8', dependencies= T)" \
+    #&& R -e "remotes::install_version('rBLAST', repos = 'https://mhahsler.r-universe.dev', dependencies= T)" \
+    && R -e "remotes::install_github('mhahsler/rBLAST', dependencies= T)" \
+    && R -e "remotes::install_version('leaflet', version = '2.1.2', dependencies= T)" \
+    && R -e "remotes::install_version('sp', version = '1.6-1', dependencies= T)" \
+    && R -e "remotes::install_version('magrittr', version = '2.0.3', dependencies= T)" \
+    && R -e "remotes::install_version('shinythemes', version = '1.2.0', dependencies= T)" \
+    && R -e "remotes::install_version('DT', version = '0.28', dependencies= T)" \
+    && R -e "remotes::install_version('shinyjs', version = '2.1.0', dependencies= T)" \
+    && R -e "remotes::install_version('vembedr', version = '0.1.5', dependencies= T)" \
+    && R -e "remotes::install_version('multidplyr', version = '0.1.3', dependencies= T)" \
+    && R -e "remotes::install_version('shinybusy', version = '0.3.1', dependencies= T)"
+
+
+# Custom added
+RUN R -e "install.packages('log4r')" \
+    && R -e "install.packages('readr')" \
+    && R -e "install.packages('RcppTOML')"
+
+
+RUN mkdir /data \
+    && mkdir /rlogs \
+    && chown -R shiny:shiny /data \
+    && chown -R shiny:shiny /rlogs
+
 
 RUN rm -rf /srv/shiny-server/*
-COPY /app/* /srv/shiny-server/
+COPY /app/ /srv/shiny-server/app
+COPY .Renviron.template /srv/shiny-server/app/.Renviron
+COPY shiny-customized.config /etc/shiny-server/shiny-server.conf
 
-USER shiny
+WORKDIR /srv/shiny-server/app
 
+RUN chown -R shiny:shiny . && \
+    chmod ug+x start-script.sh
+# end custom modified
+
+
+USER $USER
 EXPOSE 3838
 
 CMD ["/usr/bin/shiny-server"]
