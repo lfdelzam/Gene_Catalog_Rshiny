@@ -132,6 +132,9 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
+# App log files
+*.log
+
 # The data folder contents
 data/*
 !data/.gitkeep
