@@ -2,26 +2,36 @@ list_of_packages <- c("tidyverse", "data.table", "rBLAST", "leaflet", "sp", "mag
 
 for (s in list_of_packages) { suppressPackageStartupMessages(library(s, character.only = TRUE, warn.conflicts = FALSE, quietly=T)) }
 
-# Logging
-library("log4r")
-logger <- log4r::logger("DEBUG")
 
-log4r::info(logger, "START app.R")
+# Custom
+print("Begin app.R")
+
+# Perform some setup verifications
+source("verify-setup.R")
+
 
 tryCatch({
   source("app_functions.R")
 }, error=function(e) {
-    log4r::warn(logger, e)
+    log4r::warn(file_logger, e)
 }, warning=function(e) {
-    log4r::warn(logger, e)
+    log4r::warn(file_logger, e)
 })
 
-# Perform some setup verifications
-log4r::debug(logger, "app.R. Performing some startup verifications")
-          path_to_query_n <- paste(directorio_qr, paste(session$token,"queryp.fna", sep="_"), sep="/")
-          fwrite(as.list(texti), file=path_to_query_n, quote = F)
+
+# Create the Query folder
+log4r::debug(logger, "app.R. Creating the Query folder")
+
+tryCatch({
+  dir.create(directorio_qr,showWarnings = F,recursive = T)
+}, error=function(e) {
+  log4r::warn(logger, e)
+}, warning=function(e) {
+  log4r::warn(logger, e)
+})
 
 # End added custom code
+
 
 shinyApp(
   ui=fluidPage( theme = shinytheme("spacelab"),
