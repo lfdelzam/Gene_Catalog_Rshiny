@@ -3,9 +3,11 @@ name: Docker publish
 on:
   push:
     branches: [ "main" ]
+    paths-ignore:
+      - '**.md'
     # Publish semver tags as releases.
     tags: [ 'v*.*.*' ]
-
+    
   # Adds ability to run this workflow manually
   workflow_dispatch:
 
@@ -13,7 +15,7 @@ on:
 env:
   REGISTRY: ghcr.io
   #IMAGE_NAME: ${{ github.repository }}
-  IMAGE_NAME: gene_catalog_rshiny
+  IMAGE_NAME: alfredeen/gene_catalog_rshiny
 
 
 jobs:
