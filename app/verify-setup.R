@@ -71,3 +71,63 @@ tryCatch({
     log4r::warn(logger, e)
 })
 
+
+work_filename <- "df.csv"
+
+df <- data.frame(var1=c(1, 2, 3, 4, 5),
+                 var2=c(6, 7, 8, 9, 0))
+
+tryCatch({
+
+  work_path <- paste(dir_appwork, work_filename, sep = "/")
+  print(paste("print: Creating file ", work_path))
+  log4r::debug(logger, paste("Creating file ", work_path))
+  fwrite(df, file=work_path)
+
+}, error=function(e) {
+  log4r::warn(logger, e)
+}, warning=function(e) {
+  log4r::warn(logger, e)
+})
+
+
+# Access data volume and read data file if configured
+log4r::info(logger, paste("Data directory configuration set to =", data_dir))
+
+if (data_dir == "") {
+  print("data_dir var is not set")
+  log4r::debug(logger, "data_dir var is not set")
+} else {
+  print("data_dir var is NOT empty string")
+  log4r::debug(logger, "data_dir var is NOT empty string")
+
+  # Verify that the data directory exists
+  if (!dir.exists(data_dir)){
+    print(paste("WARNING. Directory data_dir does NOT exist.", data_dir))
+    log4r::warn(logger, paste("Directory data_dir does NOT exist.", data_dir))
+    stop("ERROR. Incorrect app setup. A data directory is configured but was not found.")
+  }
+
+  # Attempt to read a file from the data directory
+  data_file <- paste(data_dir, "existing.csv", sep = "/")
+  if (file.exists(data_file)) {
+    log4r::info(logger, paste("Data file was found. Exists at path =", data_file))
+
+    # Open the data file
+    tryCatch({
+
+      df <- read_csv(data_file)
+      df_summary <- summary(df)
+      log4r::info(logger, paste("Data file summary =", df_summary))
+
+    }, error=function(e) {
+      log4r::warn(logger, e)
+    }, warning=function(e) {
+      log4r::warn(logger, e)
+    })
+
+  } else {
+    log4r::warn(logger, paste("Data file was NOT found. Should exists at path =", data_file))
+  }
+
+}

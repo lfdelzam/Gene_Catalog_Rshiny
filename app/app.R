@@ -23,7 +23,7 @@ tryCatch({
 log4r::debug(logger, "app.R. Creating the Query folder")
 
 tryCatch({
-  dir.create(directorio_qr,showWarnings = F,recursive = T)
+  dir.create(directorio_qr, showWarnings = TRUE, recursive = TRUE)
 }, error=function(e) {
   log4r::warn(logger, e)
 }, warning=function(e) {
@@ -198,6 +198,7 @@ shinyApp(
 
     blastresults <- eventReactive(input$run_blast, {
       log4r::debug(logger, "Entered blastResults event.")
+      log4r::debug(logger, paste("Value input$B_type is =", input$B_type))
       text<-NULL
       if (grepl(">",isolate(input$query))){
         texti=isolate(input$query)
@@ -217,8 +218,11 @@ shinyApp(
           text=isolate(readDNAStringSet(path_to_query_n))
           file.remove(path_to_query_n)
         } else if (input$B_type == "blastp") {
+          log4r::debug(logger, paste("A blastp search"))
           path_to_query_p <- paste(directorio_qr, paste(session$token,"queryp.faa", sep="_"), sep="/")
+          log4r::debug(logger, paste("Writing texti to query file. texti=", texti))
           fwrite(as.list(texti), file=path_to_query_p, quote = F)
+          log4r::debug(logger, paste("Wrote query file to path=", path_to_query_p))
           text=isolate(readAAStringSet(path_to_query_p))
           file.remove(path_to_query_p)
         }
