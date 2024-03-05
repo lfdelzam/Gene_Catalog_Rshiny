@@ -30,7 +30,7 @@ tryCatch({
 # Logging
 print(paste("Running app with log level = ", log_level, ". Logging to ", log_file))
 
-logger <- log4r::logger(appenders = file_appender(log_file))
+logger <- log4r::logger(log_level, appenders = file_appender(log_file))
 
 log4r::info(logger, paste("START app.R. Logging enabled with log level =", log_level))
 
