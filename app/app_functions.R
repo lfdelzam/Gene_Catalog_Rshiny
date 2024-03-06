@@ -36,6 +36,7 @@ run_blast<-function(bl, query,cpus, hits, evalue, minIden,minalg, type) {
 Hit_blast <- function(B_type, query, Cpus, N_hits, Evalue, minPer_Iden, minPer_alg) {
   
   if (B_type == "blastp") {
+    log4r::debug(logger, paste("Hitting blast using blastp. Using path path_to_db_p=", path_to_db_p))
     blp <- blast(db=path_to_db_p, type = "blastp")
     RESULTS=run_blast(blp, query, Cpus, N_hits, Evalue, minPer_Iden, minPer_alg, B_type)
   }

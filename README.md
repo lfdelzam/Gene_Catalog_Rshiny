@@ -32,7 +32,10 @@ Run the container without data folder
 
 Or, run the container with a mounted local data folder
 
-    docker run -p 127.0.0.1:3838:3838 -v $HOME/git/alfredeen/Gene_Catalog_Rshiny/data:/data gene-catalog-rshiny:dev
+    docker run -p 127.0.0.1:3838:3838 \
+    -v $HOME/git/alfredeen/Gene_Catalog_Rshiny/data:/data \
+    --memory=16g --memory-swap=20g \
+    gene-catalog-rshiny:dev
 
 Browse to the app at  http://localhost:3838/
 
