@@ -27,6 +27,12 @@ run_blast<-function(bl, query,cpus, hits, evalue, minIden,minalg, type) {
   for (i in 1:length(query)) {
     nam=lista[i]
     blast_table[[nam]] <- predict(bl, query[i,], BLAST_args = blast_arg)
+
+    # Rename column names because the rBLAST predict function sometimes names columns differently
+    names(blast_table[[nam]])<-c("QueryID","SubjectID","Perc.Ident","Alignment.Length","Mismatches","Gap.Openings","Q.start","Q.end","S.start","S.end","E","Bits")
+
+    print(paste("blast_table names=", names(blast_table[[nam]])))
+    log4r::debug(logger, paste("blast_table names=", names(blast_table[[nam]])))
     LEN=query[i,]@ranges@width
     blast_table[[nam]] <- blast_table[[nam]] %>% mutate(Perc.Query.Coverage = round((Alignment.Length-Gap.Openings)*100/LEN,2)) %>% filter(Perc.Ident > minIden & Perc.Query.Coverage > minalg)  
   }
