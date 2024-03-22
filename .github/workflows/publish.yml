@@ -21,6 +21,8 @@ env:
 jobs:
 
   publish:
+    # Only run this action in the forked development repository
+    if: github.repository == 'alfredeen/Gene_Catalog_Rshiny'
 
     runs-on: ubuntu-latest
     permissions:

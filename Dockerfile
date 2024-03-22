@@ -3,7 +3,6 @@ FROM rocker/shiny:latest
 #  "shiny"
 
 ENV USER=shiny
-#RUN useradd -m -u 1000 $USER
 
 # Install system dependencies including those for tidyverse
 RUN apt-get update && \
@@ -35,8 +34,8 @@ RUN R -e "install.packages('remotes')" \
     && R -e "remotes::install_version('tidyverse', version = '2.0.0', dependencies= T)" \
     && R -e "remotes::install_version('arrow', version = '14.0.0', dependencies= T)" \
     && R -e "remotes::install_version('data.table', version = '1.14.8', dependencies= T)" \
-    #&& R -e "remotes::install_version('rBLAST', repos = 'https://mhahsler.r-universe.dev', dependencies= T)" \
-    && R -e "remotes::install_github('mhahsler/rBLAST', dependencies= T)" \
+    && R -e "remotes::install_version('rBLAST', repos = 'https://mhahsler.r-universe.dev', dependencies= T, version='0.99.4')" \
+    #&& R -e "remotes::install_github('mhahsler/rBLAST', dependencies= T)" \
     && R -e "remotes::install_version('leaflet', version = '2.1.2', dependencies= T)" \
     && R -e "remotes::install_version('sp', version = '1.6-1', dependencies= T)" \
     && R -e "remotes::install_version('magrittr', version = '2.0.3', dependencies= T)" \
@@ -48,7 +47,7 @@ RUN R -e "install.packages('remotes')" \
     && R -e "remotes::install_version('shinybusy', version = '0.3.1', dependencies= T)"
 
 
-# Custom added
+# Additional packages for logging and diagnosis
 RUN R -e "install.packages('log4r')" \
     && R -e "install.packages('readr')" \
     && R -e "install.packages('RcppTOML')"
@@ -69,7 +68,6 @@ WORKDIR /srv/shiny-server/app
 
 RUN chown -R shiny:shiny . && \
     chmod ug+x start-script.sh
-# end custom modified
 
 
 USER $USER
