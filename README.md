@@ -1,26 +1,41 @@
 # Gene_Catalog_Rshiny
-Fork of lfdelzam/Gene_Catalog_Rshiny
 
-For testing variations of building and deploying this Shiny app.
+BAltic Gene Set - BAGS.v1.1
 
-## Development
+## Deploying to the Serve plattform
 
-If planning to run in local environment from R terminal:
-Copy and edit the .Renviron file
+### Configuration
 
-    cp ./.Renviron.template ./app/.Renviron
+The application is configured in the .Renviron.template file. This is initially configured for deployment to the Serve plattform.
 
-If using a local data directory, create the directory and copy a data file there named existing.csv:
+### Setup
 
-    mkdir data
+Upload the dataset to Serve and extract such that the contents reside directly under project-vol. The project-vol directory will be mapped to /data in the container.
+
+Create as custom app type in Serve with the following values:
+
+- Persistent Volume: project-vol
+- Path: /data
+- Port: 3838
+- Image: specify the path to the published image
+- User ID: 999
+
+
+### Viewing logs
+
+    cat /rlogs/app.log
+
+    ls /var/log/shiny-server
+
+## Local deployments
 
 ## Build and run a docker image locally
 
 Configure for the local environment in the .Renviron.template file
 
     R_LOGLEVEL = "DEBUG"
-    R_LOGFILE = "/rlogs/app.log"
-    DATA_DIR = "/data"
+    R_LOGFILE = "../rlogs/app.log"
+    DATA_DIR = "../data"
 
 Build the docker image
 
@@ -32,15 +47,23 @@ Run the container without data folder
 
 Or, run the container with a mounted local data folder
 
+    APP_PATH="PATH-TO-GIT-REPO/Gene_Catalog_Rshiny"
+
     docker run -p 127.0.0.1:3838:3838 \
-    -v $HOME/git/alfredeen/Gene_Catalog_Rshiny/data:/data \
+    -v $APP_PATH/data:/data \
     --memory=16g --memory-swap=20g \
     gene-catalog-rshiny:dev
 
 Browse to the app at  http://localhost:3838/
 
-## View the log files
+## Local development
 
-    cat /rlogs/app.log
+If planning to run in local environment from R terminal:
+Copy and edit the .Renviron file
 
-    ls /var/log/shiny-server
+    cp ./.Renviron.template ./app/.Renviron
+
+If using a local data directory, create the directory and copy a data file there named existing.csv.
+This can be used for diagnosing permission problems.
+
+    mkdir data

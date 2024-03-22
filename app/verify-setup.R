@@ -6,7 +6,7 @@ library(log4r)
 library(RcppTOML)
 
 
-# Settings from env vars
+# Settings from env vars with default initial values
 data_dir <- ""
 log_level <- "DEBUG"
 log_file <- "/rlogs/app.log"
