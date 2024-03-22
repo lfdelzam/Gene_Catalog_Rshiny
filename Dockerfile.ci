@@ -21,8 +21,8 @@ RUN apt-get update && \
 # Install Blast
 # FROM ncbi/blast:2.13.0
 
-RUN wget ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/2.13.0/ncbi-blast-2.13.0+-x64-linux.tar.gz -O /tmp/blast.tar.gz && \
-	tar zxvf /tmp/blast.tar.gz -C /opt/ && rm /tmp/blast.tar.gz
+#RUN wget ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/2.13.0/ncbi-blast-2.13.0+-x64-linux.tar.gz -O /tmp/blast.tar.gz && \
+#	tar zxvf /tmp/blast.tar.gz -C /opt/ && rm /tmp/blast.tar.gz
 
 ENV PATH="/opt/ncbi-blast-2.13.0+/bin:${PATH}"
 

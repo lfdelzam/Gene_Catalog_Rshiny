@@ -1,6 +1,6 @@
 #Query folder
 directorio_qr <- "Query"
-directorio_db<- "data"
+directorio_db <- data_dir
 path_to_db_p <- paste(directorio_db,"AA/rep_proteins.faa", sep="/")
 path_to_db <- paste(directorio_db,"DNA/rep_genes.fna", sep="/")
 
@@ -27,6 +27,12 @@ run_blast<-function(bl, query,cpus, hits, evalue, minIden,minalg, type) {
   for (i in 1:length(query)) {
     nam=lista[i]
     blast_table[[nam]] <- predict(bl, query[i,], BLAST_args = blast_arg)
+
+    # Rename column names because the rBLAST predict function sometimes names columns differently
+    names(blast_table[[nam]])<-c("QueryID","SubjectID","Perc.Ident","Alignment.Length","Mismatches","Gap.Openings","Q.start","Q.end","S.start","S.end","E","Bits")
+
+    print(paste("blast_table names=", names(blast_table[[nam]])))
+    log4r::debug(logger, paste("blast_table names=", names(blast_table[[nam]])))
     LEN=query[i,]@ranges@width
     blast_table[[nam]] <- blast_table[[nam]] %>% mutate(Perc.Query.Coverage = round((Alignment.Length-Gap.Openings)*100/LEN,2)) %>% filter(Perc.Ident > minIden & Perc.Query.Coverage > minalg)  
   }
@@ -36,6 +42,7 @@ run_blast<-function(bl, query,cpus, hits, evalue, minIden,minalg, type) {
 Hit_blast <- function(B_type, query, Cpus, N_hits, Evalue, minPer_Iden, minPer_alg) {
   
   if (B_type == "blastp") {
+    log4r::debug(logger, paste("Hitting blast using blastp. Using path path_to_db_p=", path_to_db_p))
     blp <- blast(db=path_to_db_p, type = "blastp")
     RESULTS=run_blast(blp, query, Cpus, N_hits, Evalue, minPer_Iden, minPer_alg, B_type)
   }
