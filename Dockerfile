@@ -34,7 +34,7 @@ RUN R -e "install.packages('remotes')" \
     && R -e "remotes::install_version('tidyverse', version = '2.0.0', dependencies= T)" \
     && R -e "remotes::install_version('arrow', version = '14.0.0', dependencies= T)" \
     && R -e "remotes::install_version('data.table', version = '1.14.8', dependencies= T)" \
-    && R -e "remotes::install_version('rBLAST', repos = 'https://mhahsler.r-universe.dev', dependencies= T, version='1.0.0')" \
+    && R -e "remotes::install_version('rBLAST', repos = 'https://mhahsler.r-universe.dev', dependencies= T, version='0.99.0')" \
     #&& R -e "remotes::install_github('mhahsler/rBLAST', dependencies= T)" \
     && R -e "remotes::install_version('leaflet', version = '2.1.2', dependencies= T)" \
     && R -e "remotes::install_version('sp', version = '1.6-1', dependencies= T)" \
