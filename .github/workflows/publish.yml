@@ -15,15 +15,12 @@ on:
 env:
   REGISTRY: ghcr.io
   #IMAGE_NAME: ${{ github.repository }}
-  IMAGE_NAME: alfredeen/gene_catalog_rshiny
+  IMAGE_NAME: ${{ github.repository_owner }}/gene_catalog_rshiny
 
 
 jobs:
 
   publish:
-    # Only run this action in the forked development repository
-    if: github.repository == 'alfredeen/Gene_Catalog_Rshiny'
-
     runs-on: ubuntu-latest
     permissions:
       contents: read
